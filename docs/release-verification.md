@@ -13,7 +13,7 @@ execution evidence; only an execution recorded under "Recorded executions" is.
 | 3 | Notebook matches the package byte-for-byte | **met** — `tools/build_notebook.py --check` (PAR3) |
 | 4 | Static release-asset validation passes | **met** — `tools/validate_release_assets.py` |
 | 5 | Notebook executes top-to-bottom in a fresh **local** kernel | **met** — pre-flight only, recorded below |
-| 6 | Notebook executes top-to-bottom in a **supported hosted runtime** from a cold start | **open** |
+| 6 | Notebook executes top-to-bottom in a **supported hosted runtime** from a cold start | **met** — recorded below |
 | 7 | Weights uploaded to the DIMER Model Repository | **open** — owner action |
 
 Gate 6 is what separates **Candidate** from **Release-grade**. The local run in gate 5 pre-staged the
@@ -222,4 +222,4 @@ These are recorded behaviour, not defects, and should survive future edits:
 | Date | Runtime | Notebook | Blob | Result |
 |---|---|---|---|---|
 | 2026-09-15 | Local Windows CPU kernel (Python 3.12.10, `torch 2.14.0+cu130`, GPU hidden), pre-staged checkpoint, pins already present | `yolox_x_detection_finetune_colab.ipynb` | blob `a4642713bbb3126b1a1c90e55c64a4ef745a4e9a` at commit `e0631e0` | **PASS** - 22/22 code cells, 163.4 s; reproduced the smoke figures exactly (baseline AP 0.0384 / AP50 0.0384 -> adapted AP 0.7906 / AP50 1.0000, loss 5.69562 -> 1.61572, 11,793,304 of 98,997,304 parameters trained, COCO IoU 0.974/0.943/0.975/0.000/0.918, artifact 396,692,619 bytes over 894 tensors, fresh reload identical, all five new-data objects correctly labelled). Uniform noise at the evaluation thresholds gave `potted plant` 0.076 and `vase` 0.057. |
-| — | Supported hosted runtime, cold start | — | — | **not yet run** (gate 6) |
+| 2026-09-15 | Kaggle GPU kernel (`kurtvalcorza/dimer-nb2-yolox-x-detection-finetune` v2), fresh container assigned **Tesla T4** (driver 580.159.04), Python 3.12.13, Linux 6.12.90; committed notebook executed in fresh IPython interpreter via `nbclient 0.10.2` | `yolox_x_detection_finetune_colab.ipynb` | blob `99c57d7bc1431e42bbb3a7328e273348027972c8` at commit `1943fbb` | **PASS** — 22/22 code cells, 220.6 s wall (pass 1: 154.5 s install + restart; pass 2: 66.0 s full run); reproduced smoke figures and geometry sanity: baseline AP 0.0384 / AP50 0.0384 -> adapted AP 0.8974 / AP50 1.0000, loss 5.6956 -> 1.6057, 11,793,304 of 98,997,304 parameters trained, COCO IoU 0.974/0.943/0.975/0.000/0.918, artifact 396,692,619 bytes over 894 tensors, fresh reload identical (reloaded AP 0.8974 / AP50 1.0000), tampered artifact refused, all five new-data sign objects correctly detected (same-label IoU 0.82–0.946). 2 files, 793 MB staged (`yolox_x.pth`). |
