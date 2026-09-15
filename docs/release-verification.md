@@ -221,5 +221,5 @@ These are recorded behaviour, not defects, and should survive future edits:
 
 | Date | Runtime | Notebook | Blob | Result |
 |---|---|---|---|---|
-| 2026-09-15 | Local Windows CPU kernel (Python 3.12.10, `torch 2.14.0+cu130`, GPU hidden), pre-staged checkpoint, pins already present | `yolox_x_detection_finetune_colab.ipynb` | `__LOCAL_ROW__` | `__LOCAL_RESULT__` |
+| 2026-09-15 | Local Windows CPU kernel (Python 3.12.10, `torch 2.14.0+cu130`, GPU hidden), pre-staged checkpoint, pins already present | `yolox_x_detection_finetune_colab.ipynb` | blob `a4642713bbb3126b1a1c90e55c64a4ef745a4e9a` at commit `e0631e0` | **PASS** - 22/22 code cells, 163.4 s; reproduced the smoke figures exactly (baseline AP 0.0384 / AP50 0.0384 -> adapted AP 0.7906 / AP50 1.0000, loss 5.69562 -> 1.61572, 11,793,304 of 98,997,304 parameters trained, COCO IoU 0.974/0.943/0.975/0.000/0.918, artifact 396,692,619 bytes over 894 tensors, fresh reload identical, all five new-data objects correctly labelled). Uniform noise at the evaluation thresholds gave `potted plant` 0.076 and `vase` 0.057. |
 | — | Supported hosted runtime, cold start | — | — | **not yet run** (gate 6) |
