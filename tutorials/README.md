@@ -39,7 +39,7 @@ behind a default-off flag:
 
 Expect roughly a few minutes on a hosted CPU runtime; on the reference machine the committed notebook
 executed in about 160 s with the checkpoint pre-staged and the pins already present, of which the fine-tune
-is about 130 s. On a Kaggle T4 the previous version needed a restart after its install cell (154.5 s), then ran in 66.0 s; the regenerated notebook (2026-10-05 review fixes) installs into an isolated environment instead and has not been timed yet.
+is about 130 s. On a Kaggle T4 the previous version needed a restart after its install cell (154.5 s), then ran in 66.0 s; the regenerated notebook (2026-10-05 review fixes) installs into an isolated environment instead and ran one pass on a fresh Colab T4 on 2026-10-10 in 150.1 s, with 51 s of environment setup (blob `af87b360649d`, commit `d2b0bb2`; see `../docs/release-verification.md`).
 
 ## Reading the numbers
 

@@ -99,7 +99,7 @@ PYTHONPATH=src python tools/validate_release_assets.py
 executed top-to-bottom once in a fresh local CPU kernel. That is pre-flight evidence, not
 supported-runtime evidence. The recorded Kaggle T4 run of an earlier blob needed a manual restart
 after its install cell, so it is not one-pass evidence either; the regenerated notebook (isolated
-`uv` environment, no restart) has not been run on a hosted runtime yet. Promotion to Release-grade
+`uv` environment, no restart) — blob `af87b360649d` (commit `d2b0bb2`) completed one pass with no restart and 0 errors on a fresh Colab Tesla T4 on 2026-10-10 (Colab CLI 0.7.4 sequential execution, 24/24 code cells, 150.1 s; baseline AP 0.0384 / AP50 0.0384 → adapted AP 0.8974 / AP50 1.0; fresh reload identical) — is the current one-pass record; status stays Candidate. Promotion to Release-grade
 requires a clean-room execution recorded in [`docs/release-verification.md`](docs/release-verification.md).
 
 ## Licences
