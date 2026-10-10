@@ -269,3 +269,18 @@ def test_yxx_M3_model_specific_statements_match_this_repositorys_record(notebook
     for in_notebook, in_record in (("0.0384", "0.0384"), ("0.918–0.975", "0.918"), ("0.791", "0.7906"), ("0.897", "0.8974"), ("154.5 s", "154.5 s"), ("66.0 s", "66.0 s")):
         assert in_notebook in md, in_notebook
         assert in_record in record, f"{in_record} is quoted in the notebook but absent from this repository's record"
+
+
+# ---- m3 (status half): STATUS.md, README and the record agree on the restarted hosted run ---------------------------
+
+
+def test_m3_status_and_record_agree_the_restarted_hosted_run_is_not_one_pass_evidence() -> None:
+    status = (ROOT / "STATUS.md").read_text(encoding="utf-8")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8").split("## Release status", 1)[1]
+    record = (ROOT / "docs" / "release-verification.md").read_text(encoding="utf-8")
+    assert "Current status: **Candidate**" in status
+    for text in (status, readme):
+        assert "Kaggle T4" in text and "manual restart" in text and "not one-pass" in text
+    gate6 = next(line for line in record.splitlines() if line.startswith("| 6 |"))
+    assert "| **open**" in gate6 and "**met**" not in gate6
+    assert "PASS after a manual restart" in record
