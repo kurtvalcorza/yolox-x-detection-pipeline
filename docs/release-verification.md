@@ -300,6 +300,12 @@ fresh test was neither generated nor scored. These numbers were not used to chan
 - Old → new: the default configuration changes from C0 (inherited from the S row's held-out grid) to
   the pre-registered rule's choice. CPU picks C1. The hosted T4 grid decides.
 
+**Amendment 1 (2026-10-18, peer review of the YOLOX-S fix, mirrored here).** The decision is taken on a
+T4 only (device class is a pre-registered setting; a CPU run with `RUN_GRID = "on"` or any other GPU is
+exploratory), Section 9 recomputes the grid and fingerprint checks itself, an existing main report always
+spends the slot, grid rows are written per run, and Sections 10–11 export the selected system. The CPU
+look above ran before this amendment with the fresh test masked; the amendment changes no number in it.
+
 **Evaluation of record:** none yet. Hosted fresh-test looks: 0. `RECORDED_EVALUATION` is `None` until
 the first hosted T4 Run all with every setting at its default. That run is the evaluation of record,
 and later identical hosted runs are reproductions.
