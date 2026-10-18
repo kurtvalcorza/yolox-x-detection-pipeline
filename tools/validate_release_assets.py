@@ -56,7 +56,7 @@ BYOD_GATES = ("USE_BYOD_IMAGE", "USE_BYOD_DATASET")
 # The exported artifacts, as the notebook spells them. This profile builds its paths from the
 # package's own `ARTIFACT_FILE` constant rather than repeating a literal, so the check matches the
 # constructing expressions; the `outputs/` directory itself is pinned by the fleet marker
-# `OUTPUTS.mkdir(exist_ok=True)` in COMMON_CODE_MARKERS.
+# `os.makedirs('outputs', exist_ok=True)` in COMMON_CODE_MARKERS.
 EXPECTED_OUTPUTS = (
     "artifact_path = OUTPUTS / ARTIFACT_FILE",
     "OUTPUTS / f'yolox_x_detection_results{suffix}.json'",
@@ -211,7 +211,7 @@ COMMON_CODE_MARKERS = (
     "snapshot = verify_snapshot(WEIGHTS_DIR)",
     "'repository_revision': NOTEBOOK_SOURCE['repository_revision']",
     "'notebook_source': NOTEBOOK_SOURCE",
-    "OUTPUTS.mkdir(exist_ok=True)",  # Section 8 creates outputs/ before the grid writes to it
+    "os.makedirs('outputs', exist_ok=True)",
     "from google.colab import files",
     "files.upload()",
 )
@@ -236,7 +236,7 @@ COMMON_MARKDOWN_MARKERS = (
     "without the repository being",
     "It does **not** establish benchmark superiority",
     "## References",
-    f"Available: https://github.com/kurtvalcorza/{REPO_NAME}/blob/main/MODEL_CARD.md",  # IEEE reference (spec 2.5)
+    f"Available: https://github.com/kurtvalcorza/{REPO_NAME}/blob/main/MODEL_CARD.md",  # IEEE reference [5] (spec 2.5)
 )
 # Patterns that must never appear in tutorial code (comment-stripped), in any cell.
 FORBIDDEN_PATTERNS = (
