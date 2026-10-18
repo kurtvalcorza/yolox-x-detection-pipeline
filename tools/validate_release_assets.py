@@ -1,6 +1,6 @@
 """Static release-asset validation for the YOLOX-X detection and fine-tuning DIMER pipeline.
 
-Checks the STANDALONE tutorial notebook (DIMER Notebook Specification 2.2 §4), the tutorial
+Checks the STANDALONE tutorial notebook (DIMER Notebook Specification 2.5 §4), the tutorial
 registry, model card, README, STATUS.md and weight documentation for source conformance and
 cross-document identity consistency, and runs the generator parity checks (PAR1–PAR3).
 
@@ -59,7 +59,7 @@ BYOD_GATES = ("USE_BYOD_IMAGE", "USE_BYOD_DATASET")
 # `os.makedirs('outputs', exist_ok=True)` in COMMON_CODE_MARKERS.
 EXPECTED_OUTPUTS = (
     "artifact_path = OUTPUTS / ARTIFACT_FILE",
-    "OUTPUTS / 'yolox_x_detection_results.json'",
+    "OUTPUTS / f'yolox_x_detection_results{suffix}.json'",
 )
 
 CODE_MARKERS = (
@@ -75,19 +75,26 @@ CODE_MARKERS = (
     "('blank', blank_scene()), ('noise', noise_scene(0))",
     # E2E stages: sample data -> validate -> split -> baseline -> fine-tune -> evaluate.
     "records = sign_dataset(N_IMAGES, seed=DATASET_SEED)",
-    "dataset_manifest = validate_dataset(records, SIGN_CLASSES, epochs=EPOCHS)",
-    "train_records, held_out = split_records(records, holdout=HOLDOUT, seed=SEED)",
-    "adapter = YoloxXDetectionPipeline.from_pretrained(weights_dir=WEIGHTS_DIR, class_names=SIGN_CLASSES, seed=SEED)",
-    "baseline = adapter.evaluate(held_out)",
-    "run = adapter.finetune(",
+    "dataset_manifest = validate_dataset(records, SIGN_CLASSES, epochs=max(c['epochs'] for c in GRID))",
+    "validation_records = sign_dataset(VALIDATION_POOL['n'], seed=VALIDATION_POOL['seed'])",
+    "train_records, exposed_dev_test = split_records(records, holdout=HOLDOUT, seed=SEED)",
+    "candidate = YoloxXDetectionPipeline.from_pretrained(weights_dir=WEIGHTS_DIR, class_names=SIGN_CLASSES, seed=SEED)",
+    "baseline = baseline_pipe.evaluate(exposed_dev_test)",
+    "baseline_val = baseline_pipe.evaluate(validation_records)",
+    "candidate_run = candidate.finetune(",
     "freeze_backbone=FREEZE_BACKBONE,",
-    "adapted = adapter.evaluate(held_out)",
+    "adapted = adapter.evaluate(exposed_dev_test)",
+    # Pre-registered selection and the fail-closed fresh-test gate (R117-M1/M2).
+    "selection = select_config(grid_rows, baseline_val['ap'])",
+    "differences = preregistration_differences(settings_now)",
+    "fresh_digest_ok = pool_digest(fresh_records) == FRESH_TEST_DIGEST",
+    "ledger.record(mode, suffix)",
     # New-data inference, artifact export, fresh reload.
     "new_records = sign_dataset(3, seed=NEW_DATA_SEED)",
-    "descriptor = adapter.save_artifact(artifact_path, notes='standalone tutorial run')",
+    "descriptor = selected_pipe.save_artifact(",  # F7: the selected system is exported
     "reloaded = YoloxXDetectionPipeline.load_artifact(artifact_path)",
-    "reloaded_metrics = reloaded.evaluate(held_out)",
-    "assert abs(reloaded_metrics['ap'] - adapted['ap']) < 1e-9",
+    "reloaded_metrics = reloaded.evaluate(validation_records)",
+    "assert abs(reloaded_metrics['ap'] - selected_val['ap']) < 1e-9, 'the reloaded artifact does not reproduce the selected score'",
     # YXX-M2: a real BYOD dataset path through adaptation, reload and a result JSON; YXX-m3: image by path.
     "byod_records = read_detection_records(dataset_dir)",
     "byod_reloaded_metrics = YoloxXDetectionPipeline.load_artifact(byod_artifact).evaluate(byod_held)",
@@ -96,11 +103,11 @@ CODE_MARKERS = (
     "byod_image = load_byod_image(name, data)",
     "if len(uploaded) != 1:",
     # YXX-m2: the fine-tune cell starts from the verified base every time.
-    "finetune_started = time.perf_counter()",
+    "started = time.perf_counter()",
     "run_history.append(",
     # Provenance in the export.
     "'upstream_code_revision': UPSTREAM_CODE_REVISION, 'release_asset': RELEASE_ASSET_URL,",
-    "'device': adapter.device",
+    "'device': selected_pipe.device",
     "torchvision.__version__",
 )
 
@@ -110,7 +117,7 @@ MARKDOWN_MARKERS = (
     "Channel order is **BGR**",
     "Both thresholds are **caller-owned request parameters**",
     "**Keep the two vocabularies apart.**",
-    "**How much the random head scores by accident.**",
+    "**The baseline is not zero, and that is the interesting part.**",
     "**The backbone is frozen.**",
     "the evaluation report records a miss as a zero",
     "**Every run of this cell starts from the verified base.**",
@@ -152,10 +159,10 @@ FORBIDDEN_OUTSIDE_MODULE = (
 # ---------------------------------------------------------------------------
 # Shared checks. Everything below is source/structure validation only. Passing
 # these checks is NOT clean-runtime execution evidence under DIMER Notebook
-# Specification 2.2; see docs/release-verification.md for the release gate.
+# Specification 2.5; see docs/release-verification.md for the release gate.
 # ---------------------------------------------------------------------------
 
-NOTEBOOK_SPEC = "2.2"
+NOTEBOOK_SPEC = "2.5"
 ALLOWED_PROFILES = {"E2E", "ARTIFACT-INFERENCE", "TASK-INFERENCE", "MULTI-CAPABILITY", "SMOKE"}
 STATUS_TOKENS = ("Candidate", "Release-grade")
 PLACEHOLDER = re.compile(r"\b(TODO|TBD|FIXME)\b|Insert text here|Tooltip:", re.I)
@@ -229,7 +236,7 @@ COMMON_MARKDOWN_MARKERS = (
     "without the repository being",
     "It does **not** establish benchmark superiority",
     "## References",
-    f"- Repository model card: https://github.com/kurtvalcorza/{REPO_NAME}/blob/main/MODEL_CARD.md",
+    f"Available: https://github.com/kurtvalcorza/{REPO_NAME}/blob/main/MODEL_CARD.md",  # IEEE reference [5] (spec 2.5)
 )
 # Patterns that must never appear in tutorial code (comment-stripped), in any cell.
 FORBIDDEN_PATTERNS = (

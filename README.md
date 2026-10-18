@@ -8,8 +8,9 @@ Two capabilities over one checkpoint:
 - **Detection** — the 80 COCO classes, score-ordered xyxy pixel boxes, caller-owned confidence and NMS
   thresholds.
 - **Adaptation** — a bounded SimOTA fine-tune that re-heads the detector onto your own class
-  vocabulary, scores it against a held-out split with COCO-style average precision, and exports a
-  single reloadable artifact.
+  vocabulary, chooses its configuration on a validation pool by a pre-registered grid
+  ([`docs/yolox-x-preregistration.md`](docs/yolox-x-preregistration.md)), scores a fresh test with COCO-style
+  average precision only under the pre-registered settings, and exports a single reloadable artifact.
 
 ```python
 from yolox_x_detection_pipeline import YoloxXDetectionPipeline
@@ -99,7 +100,7 @@ PYTHONPATH=src python tools/validate_release_assets.py
 executed top-to-bottom once in a fresh local CPU kernel. That is pre-flight evidence, not
 supported-runtime evidence. The recorded Kaggle T4 run of an earlier blob needed a manual restart
 after its install cell, so it is not one-pass evidence either; the regenerated notebook (isolated
-`uv` environment, no restart) — blob `af87b360649d` (commit `d2b0bb2`) completed one pass with no restart and 0 errors on a fresh Colab Tesla T4 on 2026-10-10 (Colab CLI 0.7.4 sequential execution, 24/24 code cells, 150.1 s; baseline AP 0.0384 / AP50 0.0384 → adapted AP 0.8974 / AP50 1.0; fresh reload identical) — is the current one-pass record; status stays Candidate. Promotion to Release-grade
+`uv` environment, no restart) — blob `af87b360649d` (commit `d2b0bb2`) completed one pass with no restart and 0 errors on a fresh Colab Tesla T4 on 2026-10-10 (Colab CLI 0.7.4 sequential execution, 24/24 code cells, 150.1 s; on the 10-image split now called the exposed development test, because the defaults were chosen on the sibling YOLOX-S row and checked on it: baseline AP 0.0384 / AP50 0.0384 → adapted AP 0.8974 / AP50 1.0; fresh reload identical) — was the previous one-pass record. The pre-registered evaluation of record ran on 2026-10-18 on a fresh Colab Tesla T4 (Colab CLI 0.7.4, commit `35dc06f`, blob `a90023b2`, 25/25 code cells, 0 errors, 306.7 s): the validation grid selected C1 (C0 / C1 / C2 validation AP 0.8510 / 0.9237 / 0.8533), and on the 200-image fresh test C1 scored AP 0.9165 against the re-headed baseline's 0.0445, a difference of +0.872 with a paired bootstrap 95 % CI [0.8555, 0.8887], verdict *improved*. The baseline's classification head is untrained, so a large gain was expected; the fresh test is drawn by the same generator, so this is in-distribution evidence, not a detection benchmark. Details and evidence hashes: "Hosted T4 evaluation of record (2026-10-18)" in [`docs/release-verification.md`](docs/release-verification.md). Status stays Candidate. Under amendment 2 (deterministic GPU training, fresh test 3), the **amendment-2 evaluation of record** ran on 2026-10-18: blob `6f13a083a88d` (commit `057d2d8`) on a fresh Colab Tesla T4 (Colab CLI 0.7.4, 25/25 code cells, 0 errors, 290.3 s), after two masked hosted runs printed the same grid hash. The grid selected C1 again, with every validation number equal to the round-2 record (C0 0.8510 / C1 0.9237 / C2 0.8533). On fresh test 3 (200 images, 377 boxes, seed 1172), C1 scored AP@[.50:.95] 0.914 against the baseline's 0.0365: +0.8775, 95 % CI [0.8603, 0.8944], verdict *improved*. A reproduction on 2026-10-18 (blob `ed433995dd1a`, commit `0c8bb09`, fresh Colab Tesla T4, 25/25 code cells, 0 errors, 310.9 s) labelled itself *reproduction*, printed the same grid hash and matched the record exactly. The round-2 record above stays as history. Promotion to Release-grade
 requires a clean-room execution recorded in [`docs/release-verification.md`](docs/release-verification.md).
 
 ## Licences
