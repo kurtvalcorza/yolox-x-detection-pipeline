@@ -47,6 +47,52 @@ from PIL import Image
 
 from .coco_classes import COCO_CLASSES
 
+# Amendment 2 (docs/yolox-x-preregistration.md): cuBLAS reads this when CUDA initialises, so it is set when
+# the package is imported, before any CUDA use. A value someone set before import is kept, and then the run's
+# recorded determinism state differs from the pre-registration (an exploratory run), never silently.
+os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+DETERMINISM: dict[str, Any] = {
+    "cudnn_deterministic": True,
+    "cudnn_benchmark": False,
+    "use_deterministic_algorithms": True,
+    "warn_only": False,
+    "cublas_workspace_config": ":4096:8",
+}
+
+
+def determinism_state() -> dict[str, Any]:
+    """The determinism flags as they are now, in the keys of ``DETERMINISM`` (recorded in every report)."""
+    import torch
+
+    return {
+        "cudnn_deterministic": bool(torch.backends.cudnn.deterministic),
+        "cudnn_benchmark": bool(torch.backends.cudnn.benchmark),
+        "use_deterministic_algorithms": bool(torch.are_deterministic_algorithms_enabled()),
+        "warn_only": bool(torch.is_deterministic_algorithms_warn_only_enabled()),
+        "cublas_workspace_config": os.environ.get("CUBLAS_WORKSPACE_CONFIG"),
+    }
+
+
+def enable_determinism(seed: int) -> dict[str, Any]:
+    """Amendment 2: deterministic kernels and seeded RNGs; returns ``determinism_state()``.
+
+    ``use_deterministic_algorithms(True)`` without ``warn_only``: an op with no deterministic CUDA kernel
+    raises a RuntimeError that names it, and the run stops instead of falling back silently. The fine-tune
+    batches in-process, so there are no DataLoader workers to seed."""
+    import random
+
+    import torch
+
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", DETERMINISM["cublas_workspace_config"])
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.use_deterministic_algorithms(True)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    return determinism_state()
+
 if TYPE_CHECKING:  # pragma: no cover - typing only, never executed
     pass
 
@@ -1071,7 +1117,7 @@ class YoloxXDetectionPipeline:
         if not 0.0 < float(learning_rate) <= 1.0:
             raise ValueError(f"learning_rate must be in (0, 1], got {learning_rate!r}")
 
-        torch.manual_seed(seed)
+        determinism = enable_determinism(seed)  # amendment 2: before any training op
         rng = np.random.default_rng(seed)
         images, targets = self._as_batch_tensors(records)
         images, targets = images.to(self.device), targets.to(self.device)
@@ -1128,6 +1174,7 @@ class YoloxXDetectionPipeline:
             "seed": seed,
             "optimizer": "SGD(momentum=0.9, weight_decay=5e-4)",
             "freeze_backbone": freeze_backbone,
+            "determinism": determinism,
             "trainable_parameters": sum(p.numel() for p in trainable),
             "total_parameters": sum(p.numel() for p in self.model.parameters()),
             "use_l1": False,

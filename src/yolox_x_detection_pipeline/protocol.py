@@ -30,14 +30,18 @@ import numpy as np
 # One name list per line: the standalone generator strips single-line package imports.
 from .pipeline import COCO_IOU_THRESHOLDS, EVAL_DETECTION_THRESHOLD, EVAL_NMS_THRESHOLD, MAX_EVAL_DETECTIONS
 from .pipeline import ap_from_matches, prepared_matches
+from .pipeline import DETERMINISM
 
 # ---- pools (drawn by samples.sign_dataset; digests computed under the pinned Pillow 11.3.0) ------------------------
 VALIDATION_POOL = {"n": 40, "seed": 1171}
-FRESH_TEST_POOL = {"n": 200, "seed": 1170}
+# Amendment 2: fresh test 3. Seed 1170 (fresh test 2) is now the exposed test scored by the round-2 record.
+FRESH_TEST_POOL = {"n": 200, "seed": 1172}
+ROUND2_FRESH_TEST_POOL = {"n": 200, "seed": 1170}
 TRAINING_DIGEST = "60b0aaeea62cf9bb0498af03c1b99b43c644a4a09fee5e196e4d69dc9aef94bc"
 EXPOSED_DEV_TEST_DIGEST = "8729a7c00ce71282f406a899e88bc63b713795932240257de6545d82cb34eef8"
 VALIDATION_DIGEST = "e98aec93282e64b15b982d102e6dfb0594f321906399086ac62cb71ee08df02b"
-FRESH_TEST_DIGEST = "1f5ae3d9561b81b12e2e3122231ef91a75d6659bf0cf8734d82c9dba4f52a2d7"
+FRESH_TEST_DIGEST = "098fa0dc920a166ff2ec3393bd3e175aa88e3a864525bb5862827a39e5ba7b36"
+ROUND2_FRESH_TEST_DIGEST = "1f5ae3d9561b81b12e2e3122231ef91a75d6659bf0cf8734d82c9dba4f52a2d7"
 
 # ---- grid and selection --------------------------------------------------------------------------------------------
 GRID: tuple[dict[str, Any], ...] = (
@@ -85,11 +89,12 @@ PREREGISTERED_SETTINGS: dict[str, Any] = {
     "max_ap50_drop": MAX_AP50_DROP,
     "keep_baseline_gain": KEEP_BASELINE_GAIN,
     "device_class": "t4",  # amendment 1: the decision is taken on a hosted T4 only
+    "determinism": dict(DETERMINISM),  # amendment 2
 }
 
 # The hosted T4 run that is the evaluation of record (docs/release-verification.md, "Hosted T4 evaluation of record
 # (2026-10-18)"); values as printed by Sections 8 and 9 of that run (4 decimals). Later identical runs are reproductions.
-RECORDED_EVALUATION: dict[str, Any] | None = {
+ROUND2_RECORDED_EVALUATION: dict[str, Any] = {
     "label": "pre-registered evaluation of record",
     "date": "2026-10-18",
     "runner": "Colab CLI, fresh hosted T4 session",
@@ -110,6 +115,10 @@ RECORDED_EVALUATION: dict[str, Any] | None = {
         "verdict": "improved",
     },
 }
+
+# Amendment 2: the evaluation of record is the first hosted T4 run that scores fresh test 3 with deterministic
+# training. None until that run exists; the round-2 record above stays as history and is never overwritten.
+RECORDED_EVALUATION: dict[str, Any] | None = None
 
 TEST_LOOK_PREREGISTERED = "pre-registered evaluation (this runtime)"
 TEST_LOOK_REPRODUCTION = "reproduction"
@@ -177,9 +186,22 @@ def config_record(
             "val_ap50": float(validation["ap50"]),
             "final_total_loss": float(run["history"][-1]["total_loss"]) if run.get("history") else None,
             "fingerprint": fingerprint,
+            "loss_curve": [float(h["total_loss"]) for h in run.get("history") or []],
         }
     )
     return row
+
+
+def grid_hash(grid_rows: Mapping[str, Mapping[str, Any]], selection: Mapping[str, Any] | None) -> str:
+    """sha256 over what two deterministic runs must reproduce exactly (amendment 2's masked determinism check):
+    each row's status, validation AP and AP50, loss curve and weight fingerprint, and the selection."""
+    rows = {
+        name: {k: row.get(k) for k in ("status", "val_ap", "val_ap50", "loss_curve", "fingerprint")}
+        for name, row in sorted(grid_rows.items())
+    }
+    chosen = None if selection is None else {k: selection.get(k) for k in ("selected_config", "selected_system")}
+    text = json.dumps({"rows": rows, "selection": chosen}, sort_keys=True, default=repr)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def grid_check(

@@ -169,9 +169,9 @@ def test_every_fixed_setting_is_in_the_preregistered_check() -> None:
     assert protocol.preregistration_differences({}) == list(protocol.PREREGISTERED_SETTINGS)
 
 
-def test_recorded_evaluation_is_the_hosted_t4_record() -> None:
+def test_round2_record_is_unchanged_history() -> None:
     """The 2026-10-18 Colab CLI T4 run (docs/execution-evidence/2026-10-18-35dc06f/), values as Sections 8-9 printed them."""
-    record = protocol.RECORDED_EVALUATION
+    record = protocol.ROUND2_RECORDED_EVALUATION
     assert record is not None and record["date"] == "2026-10-18"
     assert record["device_class"] == protocol.PREREGISTERED_SETTINGS["device_class"] == "t4"
     assert record["commit"].startswith("35dc06f") and record["notebook_blob"].startswith("a90023b2")
@@ -193,7 +193,7 @@ def test_cpu_default_grid_off_trains_the_recorded_selection_and_is_exploratory(h
     assert report["test_look"] == protocol.TEST_LOOK_EXPLORATORY and report["preregistered"] is False
     # The recorded selection follows the hosted record (35dc06f selected C1): ten epochs at 1e-3.
     assert list(ns["grid_rows"]) == [protocol.RECORDED_SELECTION] == ["C1"]
-    assert protocol.RECORDED_EVALUATION["selected_config"] == protocol.RECORDED_SELECTION
+    assert protocol.ROUND2_RECORDED_EVALUATION["selected_config"] == protocol.RECORDED_SELECTION
     assert ns["grid_rows"]["C1"]["settings"]["epochs"] == 10 and ns["grid_rows"]["C1"]["settings"]["learning_rate"] == 1e-3
 
 
@@ -495,13 +495,13 @@ def test_F7_a_kept_baseline_is_the_system_shown_and_exported(harness, capsys) ->
 
 def test_with_the_record_the_first_run_in_a_new_runtime_is_a_reproduction_and_never_writes_the_main_files(harness, capsys) -> None:
     run, ns, tmp = harness
-    ns["RECORDED_EVALUATION"] = protocol.RECORDED_EVALUATION
+    ns["RECORDED_EVALUATION"] = protocol.ROUND2_RECORDED_EVALUATION
     run()
     assert not (tmp / f"{STEM}_evaluation_report.json").exists()
     assert not (tmp / f"{STEM}_fresh_test_per_image.json").exists()
     first = _report(tmp, "_reproduction_1")
     assert first["test_look"] == protocol.TEST_LOOK_REPRODUCTION == "reproduction" and first["preregistered"] is True
-    assert first["fresh_test"] is not None and first["recorded_evaluation"] == protocol.RECORDED_EVALUATION
+    assert first["fresh_test"] is not None and first["recorded_evaluation"] == protocol.ROUND2_RECORDED_EVALUATION
     comparison = first["record_comparison"]
     assert comparison["record"]["commit"].startswith("35dc06f") and comparison["matches"] is False
     assert "selected_ap" in comparison["differing"]  # the stand-in detector is not the record
@@ -515,7 +515,7 @@ def test_with_the_record_the_first_run_in_a_new_runtime_is_a_reproduction_and_ne
 
 def test_with_the_record_a_changed_setting_is_still_exploratory(harness) -> None:
     run, ns, tmp = harness
-    ns["RECORDED_EVALUATION"] = protocol.RECORDED_EVALUATION
+    ns["RECORDED_EVALUATION"] = protocol.ROUND2_RECORDED_EVALUATION
     run(**{"BATCH_SIZE = 2": "BATCH_SIZE = 1"})
     report = _report(tmp, "_exploratory_1")
     assert report["test_look"] == protocol.TEST_LOOK_EXPLORATORY and report["fresh_test"] is None
@@ -525,14 +525,14 @@ def test_with_the_record_a_changed_setting_is_still_exploratory(harness) -> None
 def test_ledger_plan_with_a_record_never_returns_the_main_slot(tmp_path) -> None:
     ledger = protocol.LookLedger(tmp_path / "work" / "ledger.json", tmp_path, STEM)
     assert ledger.plan("preregistered") == (protocol.TEST_LOOK_PREREGISTERED, "")
-    assert ledger.plan("preregistered", protocol.RECORDED_EVALUATION) == ("reproduction", "_reproduction_1")
+    assert ledger.plan("preregistered", protocol.ROUND2_RECORDED_EVALUATION) == ("reproduction", "_reproduction_1")
     ledger.record("preregistered", "_reproduction_1")
-    assert ledger.plan("preregistered", protocol.RECORDED_EVALUATION) == ("reproduction", "_reproduction_2")
-    assert ledger.plan("exploratory", protocol.RECORDED_EVALUATION) == (protocol.TEST_LOOK_EXPLORATORY, "_exploratory_1")
+    assert ledger.plan("preregistered", protocol.ROUND2_RECORDED_EVALUATION) == ("reproduction", "_reproduction_2")
+    assert ledger.plan("exploratory", protocol.ROUND2_RECORDED_EVALUATION) == (protocol.TEST_LOOK_EXPLORATORY, "_exploratory_1")
 
 
 def test_compare_with_record_reports_a_match_and_each_differing_field() -> None:
-    record = protocol.RECORDED_EVALUATION
+    record = protocol.ROUND2_RECORDED_EVALUATION
     fresh = {
         "selected": {"ap": 0.91651}, "baseline": {"ap": 0.04449}, "verdict": "improved",
         "bootstrap": {"primary_ap_difference": 0.87198, "primary_ap_ci95": [0.85551, 0.88871]},
@@ -560,3 +560,70 @@ def test_the_saved_per_image_tables_rerun_the_bootstrap_exactly(harness) -> None
     again = protocol.paired_bootstrap(selected, baseline, n_boot=200)
     assert again["primary_ap_ci95"] == report["fresh_test"]["bootstrap"]["primary_ap_ci95"]
     assert again["primary_ap_difference"] == report["fresh_test"]["bootstrap"]["primary_ap_difference"]
+
+
+# ---- amendment 2 (round 3): deterministic training and fresh test 3 ------------------------------------------------
+
+
+def test_amendment2_fresh_test_3_is_pinned_and_the_round2_pool_is_kept_as_history() -> None:
+    assert protocol.FRESH_TEST_POOL == {"n": 200, "seed": 1172}
+    assert protocol.FRESH_TEST_DIGEST == "098fa0dc920a166ff2ec3393bd3e175aa88e3a864525bb5862827a39e5ba7b36"
+    assert protocol.pool_digest(samples_module.sign_dataset(200, seed=1172)) == protocol.FRESH_TEST_DIGEST
+    assert protocol.ROUND2_FRESH_TEST_POOL == {"n": 200, "seed": 1170}
+    assert protocol.ROUND2_FRESH_TEST_DIGEST == "1f5ae3d9561b81b12e2e3122231ef91a75d6659bf0cf8734d82c9dba4f52a2d7"
+    assert protocol.PREREGISTERED_SETTINGS["fresh_test_digest"] == protocol.FRESH_TEST_DIGEST
+
+
+def test_amendment2_no_record_yet_and_the_round2_record_is_unchanged() -> None:
+    assert protocol.RECORDED_EVALUATION is None
+    assert protocol.ROUND2_RECORDED_EVALUATION["commit"].startswith("35dc06f")
+    assert protocol.ROUND2_RECORDED_EVALUATION["fresh_test"]["ap_difference"] == 0.872
+    assert protocol.RECORDED_SELECTION == "C1"  # the CPU default stays the round-2 selection until the new record
+
+
+def test_amendment2_determinism_is_a_preregistered_setting_and_is_set_before_training() -> None:
+    import inspect
+
+    import torch
+
+    assert protocol.PREREGISTERED_SETTINGS["determinism"] == pipeline_module.DETERMINISM
+    assert pipeline_module.DETERMINISM["warn_only"] is False
+    source = inspect.getsource(pipeline_module.YoloxXDetectionPipeline.finetune)
+    assert source.index("enable_determinism(seed)") < source.index("torch.optim.SGD")
+    before = torch.are_deterministic_algorithms_enabled()
+    try:
+        state = pipeline_module.enable_determinism(0)
+        assert state == pipeline_module.DETERMINISM == pipeline_module.determinism_state()
+        assert torch.backends.cudnn.deterministic is True and torch.backends.cudnn.benchmark is False
+    finally:
+        torch.use_deterministic_algorithms(before)
+
+
+def test_amendment2_first_fresh_test_3_scoring_is_the_preregistered_evaluation(harness, capsys) -> None:
+    run, ns, tmp = harness
+    run()
+    report = _report(tmp)
+    assert report["test_look"] == protocol.TEST_LOOK_PREREGISTERED == "pre-registered evaluation (this runtime)"
+    assert report["fresh_test"]["pool"] == {"n": 200, "seed": 1172} and 1172 in ns["_seeds"] and 1170 not in ns["_seeds"]
+    assert report["determinism"] == pipeline_module.DETERMINISM and report["device"]["class"] == "t4"
+    assert report["grid_hash"] == protocol.grid_hash(ns["grid_rows"], ns["selection"])
+    assert f"grid hash (two deterministic runs must print the same value): {report['grid_hash']}" in capsys.readouterr().out
+
+
+def test_amendment2_masked_check_never_generates_fresh_test_3_and_prints_the_same_grid_hash(harness, monkeypatch, capsys) -> None:
+    run, ns, tmp = harness
+    monkeypatch.setenv("DIMER_MASK_FRESH_TEST", "1")
+    run()
+    first = _report(tmp, "_masked_1")
+    run(sections=(8, 9))
+    second = _report(tmp, "_masked_2")
+    assert first["fresh_test"] is None and 1172 not in ns["_seeds"]
+    assert first["grid_hash"] == second["grid_hash"] is not None
+
+
+def test_amendment2_changed_determinism_flags_are_exploratory(harness, monkeypatch) -> None:
+    run, ns, tmp = harness
+    monkeypatch.setitem(ns, "enable_determinism", lambda seed: dict(pipeline_module.DETERMINISM, warn_only=True))
+    run()
+    report = _report(tmp, "_exploratory_1")
+    assert "determinism" in report["settings_differing"] and report["fresh_test"] is None
