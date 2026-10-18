@@ -14,6 +14,7 @@ import hashlib
 import importlib
 import itertools
 import json
+import os
 import subprocess
 import types
 from pathlib import Path
@@ -91,7 +92,7 @@ def harness(notebook, tmp_path, monkeypatch):
     ns.update({k: v for k, v in vars(protocol).items() if not k.startswith("__")})
     ns[PIPELINE_CLASS] = _GridStub
     ns["paired_bootstrap"] = functools.partial(protocol.paired_bootstrap, n_boot=200)
-    ns["torch"] = types.SimpleNamespace(cuda=types.SimpleNamespace(is_available=lambda: True))
+    ns["torch"] = types.SimpleNamespace(cuda=types.SimpleNamespace(is_available=lambda: True, get_device_name=lambda index=0: "Tesla T4"))
     calls: list[int] = []
     real_sign = samples_module.sign_dataset
 
@@ -134,7 +135,7 @@ def test_default_gpu_run_scores_the_fresh_test_once_then_labels_a_rerun_a_reprod
     again = _report(tmp, "_reproduction_1")
     assert again["test_look"] == "reproduction" and again["fresh_test"] is not None
     assert (tmp / f"{STEM}_evaluation_report.json").read_bytes() == before
-    assert {p.name for p in (tmp / "grid").iterdir()} == {"C0.json", "C1.json", "C2.json"}
+    assert {p.name for p in (tmp / "grid" / "run_1").iterdir()} == {"C0.json", "C1.json", "C2.json"}
 
 
 @pytest.mark.parametrize(
@@ -243,15 +244,14 @@ def test_a_corrupt_or_empty_ledger_never_crashes_or_relabels(harness, ledger_tex
     assert _report(tmp, "_reproduction_1")["test_look"] == "reproduction"
 
 
-def test_an_empty_main_report_is_rewritten_only_when_the_ledger_shows_no_completed_look(harness) -> None:
+def test_an_existing_main_report_spends_the_slot_even_when_unreadable(harness) -> None:
+    """Amendment 1 (F3): an existing main report, readable or not, spends the pre-registered slot; nothing relabels."""
     run, ns, tmp = harness
     tmp.mkdir()
     (tmp / f"{STEM}_evaluation_report.json").write_text("", encoding="utf-8")
     run()
-    assert _report(tmp)["test_look"] == protocol.TEST_LOOK_PREREGISTERED
-    (tmp / f"{STEM}_evaluation_report.json").write_text("", encoding="utf-8")
-    run(sections=(9,))
-    assert _report(tmp, "_reproduction_1")["test_look"] == "reproduction"
+    assert _report(tmp, "_reproduction_1")["test_look"] == protocol.TEST_LOOK_REPRODUCTION
+    assert (tmp / f"{STEM}_evaluation_report.json").read_text(encoding="utf-8") == ""
 
 
 def test_a_masked_run_never_generates_the_fresh_test(harness, monkeypatch) -> None:
@@ -374,6 +374,97 @@ def test_notebook_stamp_names_a_commit_that_contains_the_carried_modules(noteboo
         try:
             committed = subprocess.check_output(["git", "-C", str(ROOT), "show", f"{revision}:{rel}"])
         except (OSError, subprocess.CalledProcessError):
+            if os.environ.get("CI"):
+                pytest.fail("the stamped commit is not in this CI checkout: provenance cannot be checked (fetch-depth 0?)")
             pytest.skip("the stamped commit is not in this clone (shallow checkout)")
         assert committed.decode("utf-8").replace("\r\n", "\n") == (ROOT / rel).read_text(encoding="utf-8").replace("\r\n", "\n"), rel
     assert notebook["metadata"]["dimer"]["notebook_kind"] == "TUTORIAL"
+
+
+# ---- row 116 peer review, mirrored for row 117 (F1, F2, F3, F4, F7, F10) -----------------------------------------
+
+
+@pytest.mark.parametrize("device", ["cpu", "Tesla L4", "NVIDIA A100-SXM4-40GB"])
+def test_F1_a_non_t4_run_with_the_grid_on_is_exploratory_and_never_generates_the_fresh_test(harness, device) -> None:
+    run, ns, tmp = harness
+    if device == "cpu":
+        ns["torch"] = types.SimpleNamespace(cuda=types.SimpleNamespace(is_available=lambda: False))
+    else:
+        ns["torch"] = types.SimpleNamespace(cuda=types.SimpleNamespace(is_available=lambda: True, get_device_name=lambda index=0: device))
+    run(**{'RUN_GRID = "auto"': 'RUN_GRID = "on"'})
+    report = _report(tmp, "_exploratory_1")
+    assert report["fresh_test"] is None and report["test_look"] == protocol.TEST_LOOK_EXPLORATORY
+    assert "device_class" in report["settings_differing"] and report["device"]["name"] == device
+    assert protocol.FRESH_TEST_POOL["seed"] not in ns["_seeds"]
+    assert not (tmp / f"{STEM}_evaluation_report.json").exists()
+
+
+@pytest.mark.parametrize("ledger_text", ['{"preregistered_completed": NaN}', '{"preregistered_completed": Infinity}', '{"exploratory": -Infinity}'])
+def test_F2_a_non_finite_ledger_never_crashes(harness, ledger_text) -> None:
+    run, ns, tmp = harness
+    (tmp / "work").mkdir(parents=True)
+    (tmp / "work" / "look_ledger.json").write_text(ledger_text, encoding="utf-8")
+    run()
+    assert _report(tmp)["test_look"] == protocol.TEST_LOOK_PREREGISTERED
+
+
+def test_F3_a_corrupt_report_and_ledger_after_a_look_never_relabel_the_next_look(harness) -> None:
+    run, ns, tmp = harness
+    run()
+    (tmp / f"{STEM}_evaluation_report.json").write_text("", encoding="utf-8")
+    (tmp / "work" / "look_ledger.json").write_text("{bad", encoding="utf-8")
+    run(sections=(9,))
+    assert _report(tmp, "_reproduction_1")["test_look"] == protocol.TEST_LOOK_REPRODUCTION
+    assert (tmp / f"{STEM}_evaluation_report.json").read_text(encoding="utf-8") == ""
+
+
+def test_F4_an_exploratory_rerun_never_overwrites_the_grid_rows_of_an_earlier_run(harness) -> None:
+    run, ns, tmp = harness
+    run()
+    first = json.loads((tmp / "grid" / "run_1" / "C0.json").read_text(encoding="utf-8"))
+    run(sections=(8, 9), **{"FREEZE_BACKBONE = True": "FREEZE_BACKBONE = False"})
+    assert json.loads((tmp / "grid" / "run_1" / "C0.json").read_text(encoding="utf-8")) == first
+    assert json.loads((tmp / "grid" / "run_2" / "C0.json").read_text(encoding="utf-8"))["settings"]["freeze_backbone"] is False
+
+
+class _Interrupting(_GridStub):
+    interrupt_epochs: set = set()
+
+    def finetune(self, records, **kwargs):
+        if kwargs.get("epochs") in type(self).interrupt_epochs:
+            raise KeyboardInterrupt
+        return super().finetune(records, **kwargs)
+
+
+def test_F10_an_interrupted_section_8_rerun_leaves_nothing_for_section_9_to_score(harness) -> None:
+    run, ns, tmp = harness
+    ns[PIPELINE_CLASS] = _Interrupting
+    _Interrupting.interrupt_epochs = set()
+    run(**{"FREEZE_BACKBONE = True": "FREEZE_BACKBONE = False"})
+    assert _report(tmp, "_exploratory_1")["fresh_test"] is None
+    _Interrupting.interrupt_epochs = {10}
+    with pytest.raises(KeyboardInterrupt):
+        run(sections=(8,))
+    _Interrupting.interrupt_epochs = set()
+    assert ns["selection"] is None and ns["adapter"] is None and ns["grid_status"]["complete"] is False
+    with pytest.raises(RuntimeError, match="Section 8 did not finish"):
+        run(sections=(9,))
+    assert not (tmp / f"{STEM}_evaluation_report.json").exists()
+    assert protocol.FRESH_TEST_POOL["seed"] not in ns["_seeds"]
+
+
+def test_F10_section_9_recomputes_the_grid_check_instead_of_trusting_section_8(harness) -> None:
+    run, ns, tmp = harness
+    run(sections=(6, 7, 8))
+    ns["grid_rows"].pop("C2")  # a stale summary would still say complete
+    run(sections=(9,))
+    report = _report(tmp, "_exploratory_1")
+    assert report["fresh_test"] is None and any("C2" in p for p in report["grid"]["problems"])
+
+
+def test_F7_a_kept_baseline_is_the_system_shown_and_exported(harness, capsys) -> None:
+    run, ns, tmp = harness
+    _GridStub.adapted_quality = 0.0
+    run()
+    assert ns["selected_pipe"] is ns["baseline_pipe"]
+    assert "Sections 10-11 show and export the baseline" in capsys.readouterr().out

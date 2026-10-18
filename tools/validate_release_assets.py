@@ -91,10 +91,10 @@ CODE_MARKERS = (
     "ledger.record(mode, suffix)",
     # New-data inference, artifact export, fresh reload.
     "new_records = sign_dataset(3, seed=NEW_DATA_SEED)",
-    "descriptor = adapter.save_artifact(artifact_path, notes='standalone tutorial run')",
+    "descriptor = selected_pipe.save_artifact(",  # F7: the selected system is exported
     "reloaded = YoloxXDetectionPipeline.load_artifact(artifact_path)",
     "reloaded_metrics = reloaded.evaluate(validation_records)",
-    "assert abs(reloaded_metrics['ap'] - adapter_val['ap']) < 1e-9",
+    "assert abs(reloaded_metrics['ap'] - selected_val['ap']) < 1e-9, 'the reloaded artifact does not reproduce the selected score'",
     # YXX-M2: a real BYOD dataset path through adaptation, reload and a result JSON; YXX-m3: image by path.
     "byod_records = read_detection_records(dataset_dir)",
     "byod_reloaded_metrics = YoloxXDetectionPipeline.load_artifact(byod_artifact).evaluate(byod_held)",
@@ -107,7 +107,7 @@ CODE_MARKERS = (
     "run_history.append(",
     # Provenance in the export.
     "'upstream_code_revision': UPSTREAM_CODE_REVISION, 'release_asset': RELEASE_ASSET_URL,",
-    "'device': adapter.device",
+    "'device': selected_pipe.device",
     "torchvision.__version__",
 )
 

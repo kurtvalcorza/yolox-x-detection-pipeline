@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 from collections.abc import Mapping, Sequence
@@ -80,6 +81,7 @@ PREREGISTERED_SETTINGS: dict[str, Any] = {
     "min_ap_gain": MIN_AP_GAIN,
     "max_ap50_drop": MAX_AP50_DROP,
     "keep_baseline_gain": KEEP_BASELINE_GAIN,
+    "device_class": "t4",  # amendment 1: the decision is taken on a hosted T4 only
 }
 
 # The hosted T4 run that is the evaluation of record (date, notebook blob, numbers); None until it exists.
@@ -89,6 +91,18 @@ TEST_LOOK_PREREGISTERED = "pre-registered evaluation (this runtime)"
 TEST_LOOK_REPRODUCTION = "reproduction"
 TEST_LOOK_EXPLORATORY = "not scored (exploratory)"
 TEST_LOOK_MASKED = "not scored (fresh test masked for a development check)"
+
+
+def device_class(torch_module: Any) -> tuple[str, str]:
+    """(class, name) of the device this runtime trains on: 't4', 'cuda-other' or 'cpu' (amendment 1)."""
+    cuda = getattr(torch_module, "cuda", None)
+    if cuda is None or not cuda.is_available():
+        return "cpu", "cpu"
+    try:
+        name = str(cuda.get_device_name(0))
+    except Exception:  # noqa: BLE001 - an unnamed CUDA device is simply not a T4
+        name = "unknown CUDA device"
+    return ("t4" if "T4" in name.upper() else "cuda-other"), name
 
 
 def record_digest(record: Mapping[str, Any]) -> str:
@@ -325,7 +339,11 @@ class LookLedger:
         data = read_json_or_none(self.path)
         if not isinstance(data, dict):
             return {}
-        return {k: int(v) for k, v in data.items() if isinstance(v, int | float) and not isinstance(v, bool)}
+        return {
+            k: int(v)
+            for k, v in data.items()
+            if isinstance(v, int | float) and not isinstance(v, bool) and math.isfinite(v) and v >= 0
+        }
 
     def _save(self, counts: Mapping[str, int]) -> None:
         atomic_write_text(self.path, json.dumps(dict(counts)))
@@ -349,7 +367,9 @@ class LookLedger:
             raise ValueError(f"unknown scoring mode {mode!r}")
         counts = self._load()
         if mode == "preregistered":
-            if read_json_or_none(self.main_report) is not None or counts.get("preregistered_completed", 0) > 0:
+            # Amendment 1 (F3): an existing main report spends the slot even when unreadable, and so does any
+            # reproduction report; only an absent main report with no completed look in the ledger opens it.
+            if self.main_report.exists() or self._highest("reproduction") > 0 or counts.get("preregistered_completed", 0) > 0:
                 n = max(self._highest("reproduction"), counts.get("reproductions", 0)) + 1
                 return TEST_LOOK_REPRODUCTION, f"_reproduction_{n}"
             return TEST_LOOK_PREREGISTERED, ""
