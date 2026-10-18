@@ -134,3 +134,24 @@ ever applied to numbers from one run.
   hosted runs are reproductions. `RECORDED_EVALUATION` stays `None` until that run exists.
 - CPU checks by the fixer run with the fresh test masked. Nothing seen on validation, the exposed
   development test or a CPU run changes any setting in this document.
+
+## Amendment 1 (2026-10-18, before any hosted run; from the row 116 peer review F1, F10, F2–F4)
+
+Committed alone, before the code that implements it. No hosted run of this pre-registration exists, and
+no number from any run motivated this change; it closes gaps in the gate, not in the analysis.
+
+- **Device class is a pre-registered setting.** The decision is taken on a hosted NVIDIA T4 only. A run
+  on any other device (a CPU, including a CPU run with `RUN_GRID = "on"`, or any other GPU) is
+  EXPLORATORY and never scores the fresh test. Every report records the device class and device name.
+- **Section 9 recomputes its checks.** Section 8 clears the grid status, the selection and the models
+  before it trains, so an interrupted or failed Section 8 leaves nothing to trust. Section 9 recomputes
+  grid completeness from the current grid rows and settings and requires the selected model's
+  fingerprint to equal the fingerprint of the current grid row; it never relies on values left over
+  from an earlier run.
+- **The pre-registered slot is spent by any existing main report.** A main report that exists but is
+  unreadable, or any `_reproduction_<n>` report, marks the slot as spent; only an absent main report
+  (and a ledger that shows no completed look) opens it. Non-finite ledger values read as absent.
+- **Grid rows are written per run** (`outputs/grid/run_<k>/`), so an exploratory re-run never
+  overwrites the rows of an earlier run.
+- **The selected system is the one shown and exported.** Sections 10–11 detect with and export the
+  selected system (the pretrained baseline if the keep-baseline rule keeps it).
