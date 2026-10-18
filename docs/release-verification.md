@@ -155,6 +155,13 @@ overcome, so less accidental signal survives. It makes X's improvement look larg
 AP@[.50:.95] is slightly lower than S's (0.7906 against 0.8110) — which is the number to compare, and
 on this synthetic task the eleven-times-larger model is not better.
 
+**Note (2026-10-18, review R117-P5): the S-versus-X comparison above is withdrawn.** It rests on one
+seeded CPU run of each model, on the ten-image split that is now the exposed development test, and the
+gaps (0.0384 against 0.2222 at baseline, 0.7906 against 0.8110 after adaptation) are within the device
+and run-to-run variation recorded since (about 0.1 AP between CPU and T4). The shared design and this
+row's pre-registration make no claim comparing YOLOX-S and YOLOX-X. The per-model numbers above stand
+only as historical records of the exposed split; the paragraph is kept unedited.
+
 New-data inference on three images from an unseen seed (99), demo confidence 0.3 / NMS 0.45:
 
 | Image | Truth | Detections | Same-label `box_iou` |
@@ -274,8 +281,10 @@ clean-runtime evidence.
 about 2 minutes of evaluation (validation × 4 systems, fresh test × 2, one reload) and the 10 000-resample
 bootstrap (20.1 s on the reference CPU). The whole run is expected at about 5–6 minutes, well under
 the 55-minute line and the 3600 s cell timeout. Memory: batch 2 and the frozen backbone as in the
-recorded T4 PASS; four YOLOX-X models (baseline + three configs, about 400 MB of float32 weights
-each) stay resident. Peak memory has not been recorded.
+recorded T4 PASS; five YOLOX-X models (the Section 4 demonstration model, the baseline and three
+configs, about 400 MB of float32 weights each) stay resident during the grid, six while Section 11's
+reloaded copy is alive (corrected 2026-10-18 from "four", review R117-P7). Peak memory has not been
+recorded: the 2026-10-18 hosted run printed none, and it ran batch 2 without running out of memory.
 
 **CPU development look (SCORE_ONCE_RULE item 8), fresh test MASKED.** 2026-10-18, local Windows CPU
 (Intel Core Ultra 9 275HX, shared with other work, so times are slow), CI pins (`torch 2.14.0+cpu`,
@@ -312,6 +321,8 @@ look above ran before this amendment with the fresh test masked; the amendment c
 `RECORDED_EVALUATION` in `protocol.py` is still `None`; recording it there regenerates the notebook, and
 until then a later identical hosted run prints "pre-registered evaluation (this runtime)" rather than
 "reproduction". Later identical hosted runs are reproductions of this evaluation.
+(2026-10-18, requote round: `RECORDED_EVALUATION` is now set; see "Requoted" at the end of the next
+section.)
 
 **Redaction (review R117-m3, own commit).** In `execution-evidence/2026-10-10-d2b0bb2/exec.log`, lines
 1 and 193 had the absolute path of the local run directory replaced with `<local-run-dir>/`.
@@ -452,3 +463,23 @@ end to end: the VM run directory, the local copy, and the committed blob.
 hosted grid or fresh-test number exists; `RECORDED_EVALUATION` is still `None` and `RECORDED_SELECTION`
 still `"C0"`. Until those are updated (a new blob), a later identical hosted run prints "pre-registered
 evaluation (this runtime)"; this section records which run is the evaluation of record.
+
+**Requoted (2026-10-18, requote round; no model run, nothing scored).** The paragraph above describes
+blob `a90023b2`. The generator now carries the record:
+- `protocol.RECORDED_EVALUATION` holds this run (commit `35dc06f`, blob `a90023b2`, selected C1;
+  validation AP baseline 0.0378, C0 0.8510, C1 0.9237, C2 0.8533; fresh test n 200 / 413 boxes, C1
+  0.9165 against baseline 0.0445, difference 0.872, 95 % CI [0.8555, 0.8887], "improved"), as Sections 8
+  and 9 of the executed notebook printed it.
+- Because a record exists, every later pre-registered scoring, including the first one in a new
+  runtime, is labelled `reproduction`, writes `_reproduction_<n>` files (never the main report), and
+  Section 9 prints whether it matches the record. Section 9 also saves the per-image results and the
+  bootstrap's match tables (`*_fresh_test_per_image<suffix>.json`), display only.
+- `RECORDED_SELECTION` is now `"C1"`: a grid-off CPU run trains C1 (10 epochs at 1e-3) and stays
+  exploratory. In the masked CPU check (code `5e64055`) C1's fine-tune took 279.8 s.
+- The notebook's worked answers quote this run under its REL13 label; figures shared with the
+  2026-10-10 C0 run (COCO scene IoU, RGB swap, exposed baseline 0.0384, the C0 loss curve) are equal in
+  this run and are re-credited to it. Section 9's reading rule now says the "improved" verdict was close
+  to foregone because the baseline classification head is untrained (review R117-P1).
+- Device class (review R117-P4): this row keeps `"t4"` (row 116 records `"cuda-t4"`). The value is a
+  pre-registered setting (`PREREGISTERED_SETTINGS["device_class"]`, amendment 1) and the evaluation of
+  record was gated on it, so aligning the vocabulary would change a pre-registered value; left as is.

@@ -4,9 +4,10 @@
 of them hold, the validation grid is complete and ran with them, the model in hand is the selected system, and the
 generated fresh pool matches its committed digest; only such a run scores the fresh test. Every other run is
 exploratory: validation and the labelled exposed development test only, written to `*_exploratory_<n>` files. A
-repeat of a pre-registered scoring in the same runtime is a reproduction and writes `*_reproduction_<n>` files; it
-never overwrites the first one. A runtime cannot see other runtimes: docs/release-verification.md says which hosted
-run is the evaluation of record (`RECORDED_EVALUATION`, None until that run exists).
+runtime cannot see other runtimes, so `RECORDED_EVALUATION` carries the hosted run that is the evaluation of record
+(docs/release-verification.md). Once it is set, every pre-registered scoring, including the first one in a new
+runtime, is a reproduction: it writes `*_reproduction_<n>` files, never the main files, and is compared with the
+record (`compare_with_record`). With no record, a repeat in the same runtime is the reproduction.
 
 Shared design for the YOLOX tutorials (rows 116 and 117): only `VALIDATION_POOL`, `FRESH_TEST_POOL` and the
 digests differ between the two repositories.
@@ -45,7 +46,9 @@ GRID: tuple[dict[str, Any], ...] = (
     {"name": "C2", "epochs": 8, "learning_rate": 2e-3},
 )
 DEFAULT_CONFIG = "C0"
-RECORDED_SELECTION = "C0"  # what a grid-off (CPU) run trains; C0 until a hosted record selects otherwise
+# What a grid-off (CPU) run trains: the hosted record's selection (C1 in the 2026-10-18 T4 evaluation of record,
+# 35dc06f; C0 before it). A grid-off run is exploratory either way.
+RECORDED_SELECTION = "C1"
 TIE_ORDER = ("C0", "C2", "C1")  # exact ties go to the smaller config (fewer epochs)
 TIE_TOLERANCE = 1e-9
 MIN_AP_GAIN = 0.03  # a challenger must beat C0's validation AP@[.50:.95] by this much
@@ -84,8 +87,29 @@ PREREGISTERED_SETTINGS: dict[str, Any] = {
     "device_class": "t4",  # amendment 1: the decision is taken on a hosted T4 only
 }
 
-# The hosted T4 run that is the evaluation of record (date, notebook blob, numbers); None until it exists.
-RECORDED_EVALUATION: dict[str, Any] | None = None
+# The hosted T4 run that is the evaluation of record (docs/release-verification.md, "Hosted T4 evaluation of record
+# (2026-10-18)"); values as printed by Sections 8 and 9 of that run (4 decimals). Later identical runs are reproductions.
+RECORDED_EVALUATION: dict[str, Any] | None = {
+    "label": "pre-registered evaluation of record",
+    "date": "2026-10-18",
+    "runner": "Colab CLI, fresh hosted T4 session",
+    "device_class": "t4",
+    "commit": "35dc06f07ad914834eb56cca5495f1fa0ee38906",
+    "notebook_blob": "a90023b2b9bb43db2055da1e60197b87aade7f40",
+    "evidence": "docs/execution-evidence/2026-10-18-35dc06f/",
+    "selected_config": "C1",
+    "selected_system": "C1",
+    "validation_ap": {"baseline": 0.0378, "C0": 0.8510, "C1": 0.9237, "C2": 0.8533},
+    "fresh_test": {
+        "n_images": 200,
+        "n_references": 413,
+        "selected_ap": 0.9165,
+        "baseline_ap": 0.0445,
+        "ap_difference": 0.872,
+        "ci95": [0.8555, 0.8887],
+        "verdict": "improved",
+    },
+}
 
 TEST_LOOK_PREREGISTERED = "pre-registered evaluation (this runtime)"
 TEST_LOOK_REPRODUCTION = "reproduction"
@@ -296,6 +320,88 @@ def scoring_mode(
     return "preregistered" if fresh_digest_ok else "exploratory"
 
 
+def compare_with_record(
+    recorded: Mapping[str, Any] | None, fresh: Mapping[str, Any] | None, selection: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """Does this pre-registered scoring match the evaluation of record? Compared at the record's printed precision.
+
+    None when there is no record or nothing was scored. Display only: it changes no setting and no label."""
+    if recorded is None or fresh is None:
+        return None
+    boot = fresh.get("bootstrap") or {}
+    this_run = {
+        "selected_config": selection.get("selected_config"),
+        "selected_system": selection.get("selected_system"),
+        "selected_ap": round(float(fresh["selected"]["ap"]), 4),
+        "baseline_ap": round(float(fresh["baseline"]["ap"]), 4),
+        "ap_difference": round(float(boot["primary_ap_difference"]), 4) if boot else None,
+        "ci95": [round(float(v), 4) for v in boot["primary_ap_ci95"]] if boot else None,
+        "verdict": fresh.get("verdict"),
+    }
+    record = {
+        "selected_config": recorded["selected_config"],
+        "selected_system": recorded["selected_system"],
+        **{k: recorded["fresh_test"][k] for k in ("selected_ap", "baseline_ap", "ap_difference", "ci95", "verdict")},
+    }
+    differing = [k for k in record if record[k] != this_run[k]]
+    return {
+        "record": {"date": recorded["date"], "commit": recorded["commit"], "notebook_blob": recorded["notebook_blob"]},
+        "matches": not differing,
+        "differing": differing,
+        "fields": {k: {"record": record[k], "this_run": this_run[k]} for k in record},
+    }
+
+
+def matches_to_json(matches: Mapping[str, Any]) -> dict[str, Any]:
+    """A `match_detections` table as plain JSON (rows in their original order), so the bootstrap can be re-run."""
+    return {
+        "thresholds": [float(t) for t in matches["thresholds"]],
+        "class_names": list(matches["class_names"]),
+        "n_images": int(matches["n_images"]),
+        "references": {k: [int(x) for x in v] for k, v in matches["references"].items()},
+        "rows": [
+            {"threshold": float(t), "class": c, "scores": [float(x) for x in s], "hits": [bool(x) for x in h], "image_index": [int(x) for x in o]}
+            for (t, c), (s, h, o) in matches["rows"].items()
+        ],
+    }
+
+
+def matches_from_json(data: Mapping[str, Any]) -> dict[str, Any]:
+    """The inverse of `matches_to_json`: a table `paired_bootstrap` accepts."""
+    return {
+        "thresholds": [float(t) for t in data["thresholds"]],
+        "class_names": list(data["class_names"]),
+        "n_images": int(data["n_images"]),
+        "references": {k: list(v) for k, v in data["references"].items()},
+        "rows": {
+            (float(r["threshold"]), r["class"]): (list(r["scores"]), list(r["hits"]), list(r["image_index"])) for r in data["rows"]
+        },
+    }
+
+
+def per_image_summary(selected: Mapping[str, Any], baseline: Mapping[str, Any], *, iou: float = 0.5) -> list[dict[str, Any]]:
+    """Per fresh-test image: reference boxes, and each system's detections and true positives at IoU `iou`.
+
+    Display only; the bootstrap itself is re-run from the saved match tables (`matches_to_json`)."""
+    counts = {name: [[0, 0] for _ in range(selected["n_images"])] for name in ("selected", "baseline")}
+    for name, table in (("selected", selected), ("baseline", baseline)):
+        for (threshold, _cls), (_scores, hits, owners) in table["rows"].items():
+            if abs(threshold - iou) > 1e-9:
+                continue
+            for hit, owner in zip(hits, owners, strict=True):
+                counts[name][owner][0] += 1
+                counts[name][owner][1] += int(bool(hit))
+    key = f"true_positives_iou{iou:g}"
+    return [
+        {
+            "image": i,
+            "references": sum(v[i] for v in selected["references"].values()),
+            **{name: {"detections": counts[name][i][0], key: counts[name][i][1]} for name in counts},
+        }
+        for i in range(selected["n_images"])
+    ]
+
+
 def atomic_write_text(path: str | Path, text: str) -> Path:
     """Write via a temporary file and os.replace: a reader never sees a half-written file."""
     path = Path(path)
@@ -325,9 +431,11 @@ class LookLedger:
     """Counts fresh-test scorings in this runtime, crash-safely.
 
     A look is recorded only by `record()`, after the report is safely on disk. Whether the pre-registered slot is
-    spent is decided from the outputs as well as the ledger: a readable main report means every later scoring is a
-    reproduction, even if the ledger was lost; a missing or unreadable main report is (re)written unless the ledger
-    proves a completed look. A corrupt or empty ledger reads as empty and never crashes a run.
+    spent is decided from the outputs as well as the ledger (amendment 1): an existing main report file (readable or
+    not), any reproduction report, or a ledger entry means every later scoring is a reproduction. Only an absent main
+    report with no other evidence re-opens the slot; an interrupted atomic write leaves no main report, so it is not a
+    look. A corrupt, empty, negative or non-finite ledger value reads as absent and never crashes a run. Once an
+    evaluation of record exists (`RECORDED_EVALUATION`), `plan` never returns the main slot.
     """
 
     def __init__(self, path: str | Path, outputs_dir: str | Path = "outputs", stem: str = "yolox_x_detection") -> None:
@@ -361,11 +469,17 @@ class LookLedger:
         ]
         return max(found, default=0)
 
-    def plan(self, mode: str) -> tuple[str, str]:
-        """(test_look, file suffix) for a scoring of kind `mode`. Records nothing."""
+    def plan(self, mode: str, recorded: Mapping[str, Any] | None = None) -> tuple[str, str]:
+        """(test_look, file suffix) for a scoring of kind `mode`. Records nothing.
+
+        `recorded` is `RECORDED_EVALUATION`: once an evaluation of record exists, a pre-registered scoring is always a
+        reproduction, including the first one in a new runtime, and never writes the main report."""
         if mode not in ("preregistered", "exploratory", "masked"):
             raise ValueError(f"unknown scoring mode {mode!r}")
         counts = self._load()
+        if mode == "preregistered" and recorded is not None:
+            n = max(self._highest("reproduction"), counts.get("reproductions", 0)) + 1
+            return TEST_LOOK_REPRODUCTION, f"_reproduction_{n}"
         if mode == "preregistered":
             # Amendment 1 (F3): an existing main report spends the slot even when unreadable, and so does any
             # reproduction report; only an absent main report with no completed look in the ledger opens it.

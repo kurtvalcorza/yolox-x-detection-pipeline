@@ -155,3 +155,17 @@ no number from any run motivated this change; it closes gaps in the gate, not in
   overwrites the rows of an earlier run.
 - **The selected system is the one shown and exported.** Sections 10–11 detect with and export the
   selected system (the pretrained baseline if the keep-baseline rule keeps it).
+
+## Note (2026-10-18, after the evaluation of record): planning estimates against observed values
+
+Appended after the hosted T4 evaluation of record (commit `35dc06f`, blob `a90023b2`;
+docs/release-verification.md). Nothing above is changed, and no setting or rule changes.
+
+- **Grid cost.** Planned: about 80 s of fine-tuning on a T4. Observed: 104.5 s (C0 28.1 s, C1 40.7 s,
+  C2 35.7 s), about 30 % over; C0 alone took 28.1 s against 19.2 s on 2026-10-10. The whole run took
+  306.7 s wall including the 54 s environment build, inside the planned 5–6 minutes.
+- **Interval width.** Planned: a 95 % CI half-width of about ±0.07 AP. Observed: 0.0166 (CI
+  [0.8555, 0.8887] around a difference of 0.872), so the planning estimate was about four times too wide.
+  The minimum detectable change (about 0.10 AP) was a planning figure and is not re-estimated.
+- **Record.** `RECORDED_EVALUATION` in `protocol.py` now carries this run; later identical hosted runs
+  are reproductions.

@@ -92,6 +92,8 @@ def harness(notebook, tmp_path, monkeypatch):
     ns.update({k: v for k, v in vars(protocol).items() if not k.startswith("__")})
     ns[PIPELINE_CLASS] = _GridStub
     ns["paired_bootstrap"] = functools.partial(protocol.paired_bootstrap, n_boot=200)
+    # The record-less path; the record tests below set it.
+    ns["RECORDED_EVALUATION"] = None
     ns["torch"] = types.SimpleNamespace(cuda=types.SimpleNamespace(is_available=lambda: True, get_device_name=lambda index=0: "Tesla T4"))
     calls: list[int] = []
     real_sign = samples_module.sign_dataset
@@ -165,7 +167,21 @@ def test_every_fixed_setting_is_in_the_preregistered_check() -> None:
         changed = dict(protocol.PREREGISTERED_SETTINGS, **{key: "changed"})
         assert protocol.preregistration_differences(changed) == [key]
     assert protocol.preregistration_differences({}) == list(protocol.PREREGISTERED_SETTINGS)
-    assert protocol.RECORDED_EVALUATION is None
+
+
+def test_recorded_evaluation_is_the_hosted_t4_record() -> None:
+    """The 2026-10-18 Colab CLI T4 run (docs/execution-evidence/2026-10-18-35dc06f/), values as Sections 8-9 printed them."""
+    record = protocol.RECORDED_EVALUATION
+    assert record is not None and record["date"] == "2026-10-18"
+    assert record["device_class"] == protocol.PREREGISTERED_SETTINGS["device_class"] == "t4"
+    assert record["commit"].startswith("35dc06f") and record["notebook_blob"].startswith("a90023b2")
+    assert record["selected_config"] == record["selected_system"] == "C1"
+    assert record["validation_ap"] == {"baseline": 0.0378, "C0": 0.8510, "C1": 0.9237, "C2": 0.8533}
+    assert record["fresh_test"] == {
+        "n_images": 200, "n_references": 413, "selected_ap": 0.9165, "baseline_ap": 0.0445,
+        "ap_difference": 0.872, "ci95": [0.8555, 0.8887], "verdict": "improved",
+    }
+    assert (ROOT / record["evidence"]).is_dir()
 
 
 def test_cpu_default_grid_off_trains_the_recorded_selection_and_is_exploratory(harness) -> None:
@@ -174,7 +190,11 @@ def test_cpu_default_grid_off_trains_the_recorded_selection_and_is_exploratory(h
     run()
     report = _report(tmp, "_exploratory_1")
     assert report["fresh_test"] is None and "run_grid" in report["settings_differing"]
-    assert list(ns["grid_rows"]) == [protocol.RECORDED_SELECTION] == ["C0"]
+    assert report["test_look"] == protocol.TEST_LOOK_EXPLORATORY and report["preregistered"] is False
+    # The recorded selection follows the hosted record (35dc06f selected C1): ten epochs at 1e-3.
+    assert list(ns["grid_rows"]) == [protocol.RECORDED_SELECTION] == ["C1"]
+    assert protocol.RECORDED_EVALUATION["selected_config"] == protocol.RECORDED_SELECTION
+    assert ns["grid_rows"]["C1"]["settings"]["epochs"] == 10 and ns["grid_rows"]["C1"]["settings"]["learning_rate"] == 1e-3
 
 
 def test_a_partial_grid_is_exploratory_and_not_a_look(harness) -> None:
@@ -468,3 +488,75 @@ def test_F7_a_kept_baseline_is_the_system_shown_and_exported(harness, capsys) ->
     run()
     assert ns["selected_pipe"] is ns["baseline_pipe"]
     assert "Sections 10-11 show and export the baseline" in capsys.readouterr().out
+
+
+# ---- with the evaluation of record set (2026-10-18) -----------------------------------------------------------------
+
+
+def test_with_the_record_the_first_run_in_a_new_runtime_is_a_reproduction_and_never_writes_the_main_files(harness, capsys) -> None:
+    run, ns, tmp = harness
+    ns["RECORDED_EVALUATION"] = protocol.RECORDED_EVALUATION
+    run()
+    assert not (tmp / f"{STEM}_evaluation_report.json").exists()
+    assert not (tmp / f"{STEM}_fresh_test_per_image.json").exists()
+    first = _report(tmp, "_reproduction_1")
+    assert first["test_look"] == protocol.TEST_LOOK_REPRODUCTION == "reproduction" and first["preregistered"] is True
+    assert first["fresh_test"] is not None and first["recorded_evaluation"] == protocol.RECORDED_EVALUATION
+    comparison = first["record_comparison"]
+    assert comparison["record"]["commit"].startswith("35dc06f") and comparison["matches"] is False
+    assert "selected_ap" in comparison["differing"]  # the stand-in detector is not the record
+    out = capsys.readouterr().out
+    assert "reproduction of the pre-registered evaluation of 2026-10-18 (commit 35dc06f): differs from the record in" in out
+    assert (tmp / f"{STEM}_fresh_test_per_image_reproduction_1.json").is_file()
+    run(sections=(9,))
+    assert _report(tmp, "_reproduction_2")["test_look"] == "reproduction"
+    assert not (tmp / f"{STEM}_evaluation_report.json").exists()
+
+
+def test_with_the_record_a_changed_setting_is_still_exploratory(harness) -> None:
+    run, ns, tmp = harness
+    ns["RECORDED_EVALUATION"] = protocol.RECORDED_EVALUATION
+    run(**{"BATCH_SIZE = 2": "BATCH_SIZE = 1"})
+    report = _report(tmp, "_exploratory_1")
+    assert report["test_look"] == protocol.TEST_LOOK_EXPLORATORY and report["fresh_test"] is None
+    assert "record_comparison" not in report and not list(tmp.glob(f"{STEM}_evaluation_report_reproduction_*.json"))
+
+
+def test_ledger_plan_with_a_record_never_returns_the_main_slot(tmp_path) -> None:
+    ledger = protocol.LookLedger(tmp_path / "work" / "ledger.json", tmp_path, STEM)
+    assert ledger.plan("preregistered") == (protocol.TEST_LOOK_PREREGISTERED, "")
+    assert ledger.plan("preregistered", protocol.RECORDED_EVALUATION) == ("reproduction", "_reproduction_1")
+    ledger.record("preregistered", "_reproduction_1")
+    assert ledger.plan("preregistered", protocol.RECORDED_EVALUATION) == ("reproduction", "_reproduction_2")
+    assert ledger.plan("exploratory", protocol.RECORDED_EVALUATION) == (protocol.TEST_LOOK_EXPLORATORY, "_exploratory_1")
+
+
+def test_compare_with_record_reports_a_match_and_each_differing_field() -> None:
+    record = protocol.RECORDED_EVALUATION
+    fresh = {
+        "selected": {"ap": 0.91651}, "baseline": {"ap": 0.04449}, "verdict": "improved",
+        "bootstrap": {"primary_ap_difference": 0.87198, "primary_ap_ci95": [0.85551, 0.88871]},
+    }
+    selection = {"selected_config": "C1", "selected_system": "C1"}
+    same = protocol.compare_with_record(record, fresh, selection)
+    assert same["matches"] is True and same["differing"] == []
+    other = protocol.compare_with_record(record, dict(fresh, selected={"ap": 0.85}), {"selected_config": "C0", "selected_system": "C0"})
+    assert other["matches"] is False and other["differing"] == ["selected_config", "selected_system", "selected_ap"]
+    assert protocol.compare_with_record(None, fresh, selection) is None
+    assert protocol.compare_with_record(record, None, selection) is None
+
+
+def test_the_saved_per_image_tables_rerun_the_bootstrap_exactly(harness) -> None:
+    run, ns, tmp = harness
+    run()
+    report = _report(tmp)
+    saved = json.loads((tmp / f"{STEM}_fresh_test_per_image.json").read_text(encoding="utf-8"))
+    assert report["fresh_test"]["per_image_file"].endswith(f"{STEM}_fresh_test_per_image.json")
+    rows = saved["per_image"]
+    assert len(rows) == 200 and sum(r["references"] for r in rows) == report["fresh_test"]["selected"]["n_references"]
+    assert saved["bootstrap"] == {"n_boot": 200, "seed": protocol.BOOTSTRAP_SEED, "resampling_unit": "image"}
+    selected = protocol.matches_from_json(saved["matches"]["selected"])
+    baseline = protocol.matches_from_json(saved["matches"]["baseline"])
+    again = protocol.paired_bootstrap(selected, baseline, n_boot=200)
+    assert again["primary_ap_ci95"] == report["fresh_test"]["bootstrap"]["primary_ap_ci95"]
+    assert again["primary_ap_difference"] == report["fresh_test"]["bootstrap"]["primary_ap_difference"]
