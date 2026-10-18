@@ -483,3 +483,28 @@ blob `a90023b2`. The generator now carries the record:
 - Device class (review R117-P4): this row keeps `"t4"` (row 116 records `"cuda-t4"`). The value is a
   pre-registered setting (`PREREGISTERED_SETTINGS["device_class"]`, amendment 1) and the evaluation of
   record was gated on it, so aligning the vocabulary would change a pre-registered value; left as is.
+
+## Amendment 2 (round 3, 2026-10-18): deterministic training and fresh test 3
+
+See [`yolox-x-preregistration.md`](yolox-x-preregistration.md), amendment 2 (committed alone as `03a926b`).
+- **Status of the round-2 record.** The hosted T4 evaluation of record of 2026-10-18 (`35dc06f`, fresh test
+  seed 1170) stays valid as history and is carried unchanged as `ROUND2_RECORDED_EVALUATION`. It was the only
+  hosted look at seed 1170, which is now the exposed test scored by that record. `RECORDED_EVALUATION` is
+  `None` until the first hosted T4 run under amendment 2 scores fresh test 3.
+- **Fresh test 3:** `sign_dataset(200, seed=1172)`, 200 images, 377 boxes, digest
+  `098fa0dc920a166ff2ec3393bd3e175aa88e3a864525bb5862827a39e5ba7b36` (Pillow 11.3.0). It shares 0 images and
+  0 box layouts with training, the exposed development test, validation, seed 1170 and seed 99; the closest
+  single pair (vs seed 1170) is at mean absolute pixel difference 0.0109 against a within-training median of
+  0.035. The seed-1170 digest re-computed to its committed value.
+- **Determinism.** `enable_determinism` sets cuDNN deterministic, benchmark off,
+  `torch.use_deterministic_algorithms(True)` (no `warn_only`) and seeds torch, CUDA, numpy and random;
+  `CUBLAS_WORKSPACE_CONFIG=:4096:8` is set when the package is imported, before any CUDA use. The fine-tune
+  batches in-process (no DataLoader workers). The flags are a pre-registered setting and recorded in every
+  report with the device and a grid hash.
+- **Ops without a deterministic CUDA kernel.** None found by inspection on the default path: with the
+  backbone and neck frozen, gradients pass only through the head (convolutions, BatchNorm, BCE, IoU,
+  indexing, `topk` in SimOTA), none of which is on PyTorch's list of ops that raise under deterministic
+  mode. This is inferred, not run: there is no local GPU. Any such op raises a RuntimeError naming it in the
+  masked hosted check, which then stops the round.
+- **Before the new record:** two masked hosted T4 runs (`DIMER_MASK_FRESH_TEST=1`) must print the same grid
+  hash, validation APs, selection and loss curves. If they differ, there is no run of record.
