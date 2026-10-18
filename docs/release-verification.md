@@ -37,6 +37,13 @@ Two consequences worth stating plainly:
   a full fine-tune of X at this learning rate was never run, because it would be roughly an
   order of magnitude more CPU time and the S result is reason enough not to recommend it. Treat it as
   a warning inherited from a sibling, which is what it is.
+- **Disclosure (2026-10-18, review R117-M1).** The S grid chose these defaults on **held-out** AP50 of
+  `sign_dataset(24, seed=0)` split 18 / 6. `samples.py` is byte-identical in the two repositories and the
+  generator is prefix-stable, so four of this repository's ten held-out images were that grid's selection
+  images and three were its training images, and the "verified on X" check above was a further look at
+  the same split. That 10-image split is now the **exposed development test**, reported for continuity
+  only. Selection runs on a separate validation pool under
+  [`yolox-x-preregistration.md`](yolox-x-preregistration.md), and only a fresh test is the measurement.
 
 ## Smoke evidence
 
@@ -235,3 +242,76 @@ The 2026-10-05 review (`docs/reviews/2026-10-05-notebook-review/yolox_x_detectio
 - Section 8 starts every run from the verified base.
 
 **The regenerated blob `af87b360649d` (commit `d2b0bb2`) ran once on a fresh Colab Tesla T4 on 2026-10-10 with no restart** (24/24 code cells, 0 errors, 150.1 s; see Recorded executions). The open items are reviewer/integrator acceptance of that one-pass record (gate 6) and the REL12 BYOD journey. `STATUS.md`, `README.md` and gate 6 were corrected on 2026-10-10 to match this record: status **Candidate**, gate 6 open (YXX-m3).
+
+## 2026-10-18 review fixes (row 117): pre-registered grid and fresh test
+
+The configuration is now chosen on a validation pool by the grid fixed in
+[`yolox-x-preregistration.md`](yolox-x-preregistration.md), committed alone before any code. The fresh
+test is scored only under those settings. The selection logic, tie rule, look ledger and atomic writes
+are the same code as the sibling YOLOX-S repository (row 116); only the pools differ. Nothing below is
+clean-runtime evidence.
+
+**Pools** (`docs/yolox-x-detection-pools.json`; per-image SHA-256 over decoded pixels under Pillow 11.3.0):
+
+| Pool | Definition | Images | Boxes (stop / yield / speed-limit) | Digest |
+|---|---|---|---|---|
+| Training | `sign_dataset(40, seed=0)` split, train part | 30 | 61 (16 / 28 / 17) | `60b0aaeea62c…` |
+| Exposed development test | same split, held-out part | 10 | 21 (5 / 6 / 10) | `8729a7c00ce7…` |
+| Validation | `sign_dataset(40, seed=1171)` | 40 | 81 (32 / 20 / 29) | `e98aec93282e…` |
+| Fresh test | `sign_dataset(200, seed=1170)` | 200 | 413 (130 / 144 / 139) | `1f5ae3d9561b…` |
+
+- Every pair of pools, and each pool against Section 10's seed-99 images, shares 0 images and 0 box
+  layouts. The training and exposed digests equal the YOLOX-S row's (same generator, same seed).
+- Nearest-neighbour mean absolute pixel difference (64×64 thumbnails), median per image: training vs
+  fresh 0.0283, validation vs fresh 0.0280, training vs validation 0.0336; within training 0.035. The
+  closest single pair (training vs fresh) is 0.0117. Disjoint images, the same renderer: the fresh test
+  measures in-distribution generalisation on drawn signs.
+- The September grid's 24 images are the first 24 of `sign_dataset(40, seed=0)` (checked by digest).
+
+**Grid cost on a T4 (planning estimate, checked before pre-registering).** C0 took 19.2 s on the
+2026-10-10 Colab T4 run (3.2 s per epoch), so the 24-epoch grid is about 80 s of fine-tuning, plus
+about 2 minutes of evaluation (validation × 4 systems, fresh test × 2, one reload) and the 10 000-resample
+bootstrap (20.1 s on the reference CPU). The whole run is expected at about 5–6 minutes, well under
+the 55-minute line and the 3600 s cell timeout. Memory: batch 2 and the frozen backbone as in the
+recorded T4 PASS; four YOLOX-X models (baseline + three configs, about 400 MB of float32 weights
+each) stay resident. Peak memory has not been recorded.
+
+**CPU development look (SCORE_ONCE_RULE item 8), fresh test MASKED.** 2026-10-18, local Windows CPU
+(Intel Core Ultra 9 275HX, shared with other work, so times are slow), CI pins (`torch 2.14.0+cpu`,
+Pillow 11.3.0), code at `5e64055` with the notebook regenerated from it (later commits change no
+number). The committed notebook cells were run in-process with `DIMER_MASK_FRESH_TEST=1` and `RUN_GRID`
+forced to `on`, so the grid ran on CPU. The report says `test_look` "not scored (fresh test masked for a
+development check)", `preregistered_settings_hold` true, `settings_differing` empty, grid complete. The
+fresh test was neither generated nor scored. These numbers were not used to change any setting.
+
+| Config | Validation AP@[.50:.95] | Validation AP50 | Final `total_loss` | Fine-tune s (CPU) |
+|---|---|---|---|---|
+| Baseline (re-headed) | 0.0378 | 0.0378 | — | — |
+| C0 6 ep, 1e-3 | 0.7465 | 1.0000 | 1.61572 | 181.4 |
+| C1 10 ep, 1e-3 | **0.8838** | 1.0000 | 1.21424 | 279.8 |
+| C2 8 ep, 2e-3 | 0.8272 | 1.0000 | 1.91754 | 214.8 |
+
+- The rule selects **C1** on CPU: +0.1373 validation AP over C0 with no AP50 loss. The keep-baseline
+  rule keeps the adapted model (+0.8460 over the baseline).
+- Exposed development test (descriptive only): baseline 0.0384 / 0.0384, which matches every earlier
+  record; C1 0.9037 / 1.0000. C0 reproduced the 2026-09-15 CPU final loss exactly (1.61572).
+- New-data images (seed 99), C1: 5 of 5 with the right label, same-label IoU 0.911–0.940. Reload of the
+  artifact gave identical validation scores (0.8838 / 1.0).
+- Old → new: the default configuration changes from C0 (inherited from the S row's held-out grid) to
+  the pre-registered rule's choice. CPU picks C1. The hosted T4 grid decides.
+
+**Evaluation of record:** none yet. Hosted fresh-test looks: 0. `RECORDED_EVALUATION` is `None` until
+the first hosted T4 Run all with every setting at its default. That run is the evaluation of record,
+and later identical hosted runs are reproductions.
+
+**Redaction (review R117-m3, own commit).** In `execution-evidence/2026-10-10-d2b0bb2/exec.log`, lines
+1 and 193 had `/home/kurt/colab-runs/` replaced with `<local-run-dir>/`.
+- Captured SHA-256: `96da52125a7ef93cb91ad138c115d10ed2c1e795183d7d047e719ac2a0349aff`. This is the
+  value the Recorded executions row above and `run_summary.json` record.
+- Committed SHA-256: `9cabba86d6be8db1755a34b3cc1ea5151b49a7ed46319190a29e227b2382f22e`.
+
+**Tie rule (review R117-m1).** `average_precision` now scores tied scores as one operating point, so
+the result does not depend on image order. With distinct scores the numbers are unchanged.
+
+**Status.** The notebook blob changes, so the tutorial stays **Candidate** (REL14); gate 6 needs a
+one-pass hosted run of the new blob.
