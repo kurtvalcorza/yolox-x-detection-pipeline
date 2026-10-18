@@ -207,3 +207,29 @@ If they differ, STOP: there is no run of record.
 
 **CPU default.** A grid-off CPU run keeps training the round-2 record's selection (C1) until the
 amendment-2 record exists. It stays exploratory.
+
+## Note (2026-10-18, after the amendment-2 evaluation of record): planned against observed
+
+Appended after the amendment-2 hosted T4 evaluation of record (commit `057d2d8`, blob `6f13a083`;
+docs/release-verification.md, "Amendment-2 evaluation of record: hosted T4 (2026-10-18, commit 057d2d8)").
+Nothing above is changed, and no setting or rule changes.
+
+- **Masked determinism check.** Planned: two masked hosted T4 runs print identical grid numbers before any
+  run of record. Observed: both masked runs (commit `1a65eb7`, a throwaway branch, never merged) and the run of
+  record printed grid hash `16768b30e593…`, the same validation APs to every printed digit, the same 24 epoch
+  loss lines and the same selection, C1. The deterministic grid also equals the round-2 record's grid at every
+  printed digit.
+- **The new evaluation of record.** Planned: the first hosted T4 run under amendment 2 that scores fresh test 3.
+  Observed: the `057d2d8` run, labelled "pre-registered evaluation (this runtime)", the first scoring of fresh
+  test 3 by any run. Fresh test 3 (seed 1172, 200 images, 377 boxes): C1 AP 0.914 against the baseline's 0.0365,
+  difference +0.8775, 95 % CI [0.8603, 0.8944], verdict *improved*. It is a different pool from fresh test 2, so
+  it neither reproduces nor replaces the round-2 +0.872.
+- **Grid cost.** Planned: about 80 s of fine-tuning on a T4. Observed: 98.8 s (C0 27.3 s, C1 38.4 s, C2 33.1 s)
+  with determinism on, against 104.5 s for the round-2 record without it. The whole run took 290.3 s wall
+  including the 49 s environment build, inside the planned 5–6 minutes.
+- **Interval width.** Planned: a 95 % CI half-width of about ±0.07 AP. Observed: about 0.017 (the printed bounds
+  sit 0.0172 below and 0.0169 above the difference), close to round 2's 0.0166.
+- **Record.** `RECORDED_EVALUATION` in `protocol.py` now carries this run and `ROUND2_RECORDED_EVALUATION` keeps
+  the round-2 record. Every later pre-registered scoring of fresh test 3, including the first one in a new
+  runtime, is labelled "reproduction" and compared with this record. The CPU default stays C1, the selection of
+  both records.

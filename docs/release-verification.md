@@ -517,6 +517,12 @@ See [`yolox-x-preregistration.md`](yolox-x-preregistration.md), amendment 2 (com
   CPU run keeps training the round-2 selection C1. Recording the amendment-2 record in `protocol.py`
   regenerates the notebook; until then a later identical hosted run labels itself "pre-registered evaluation
   (this runtime)", and this file is what says it is a reproduction.)
+- **Requoted (2026-10-18, requote round 3):** `RECORDED_EVALUATION` now carries the `057d2d8` record (grid hash
+  `16768b30e593…`, C1, fresh test 3 AP 0.914 vs 0.0365, +0.8775, CI [0.8603, 0.8944], *improved*) and the
+  notebook is regenerated from it. A later pre-registered scoring of fresh test 3, including the first one in a
+  new runtime, now labels itself "reproduction", writes `_reproduction_<n>` files and prints whether it matches
+  the record. `RECORDED_SELECTION` stays C1 (both records selected it). The notebook's worked answers cite the
+  `057d2d8` record; the figures they share with the round-2 record are equal (timings: 98.8 s grid, 290.3 s wall).
 
 ## Masked determinism check (amendment 2, 2026-10-18)
 

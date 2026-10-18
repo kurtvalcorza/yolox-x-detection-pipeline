@@ -262,7 +262,7 @@ def test_yxx_M3_model_specific_statements_match_this_repositorys_record(notebook
     assert "YOLOX-X proposes nothing else on that box" in md and "a full fine-tune of YOLOX-X has not been run" in md
     record = (ROOT / "docs" / "release-verification.md").read_text(encoding="utf-8")
     # (as quoted in the notebook, as written in this repository's record)
-    for in_notebook, in_record in (("0.0384", "0.0384"), ("0.918–0.975", "0.918"), ("0.791", "0.7906"), ("0.897", "0.8974"), ("150.1 s", "150.1 s"), ("104.5 s", "104.5 s"), ("306.7 s", "306.7 s")):
+    for in_notebook, in_record in (("0.0384", "0.0384"), ("0.918–0.975", "0.918"), ("0.791", "0.7906"), ("0.897", "0.8974"), ("150.1 s", "150.1 s"), ("98.8 s", "98.8 s"), ("290.3 s", "290.3 s")):
         assert in_notebook in md, in_notebook
         assert in_record in record, f"{in_record} is quoted in the notebook but absent from this repository's record"
 

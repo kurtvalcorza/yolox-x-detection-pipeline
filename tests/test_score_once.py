@@ -191,9 +191,10 @@ def test_cpu_default_grid_off_trains_the_recorded_selection_and_is_exploratory(h
     report = _report(tmp, "_exploratory_1")
     assert report["fresh_test"] is None and "run_grid" in report["settings_differing"]
     assert report["test_look"] == protocol.TEST_LOOK_EXPLORATORY and report["preregistered"] is False
-    # The recorded selection follows the hosted record (35dc06f selected C1): ten epochs at 1e-3.
+    # The recorded selection follows the hosted records (35dc06f and 057d2d8 both selected C1): ten epochs at 1e-3.
     assert list(ns["grid_rows"]) == [protocol.RECORDED_SELECTION] == ["C1"]
     assert protocol.ROUND2_RECORDED_EVALUATION["selected_config"] == protocol.RECORDED_SELECTION
+    assert protocol.RECORDED_EVALUATION["selected_config"] == protocol.RECORDED_SELECTION
     assert ns["grid_rows"]["C1"]["settings"]["epochs"] == 10 and ns["grid_rows"]["C1"]["settings"]["learning_rate"] == 1e-3
 
 
@@ -574,11 +575,78 @@ def test_amendment2_fresh_test_3_is_pinned_and_the_round2_pool_is_kept_as_histor
     assert protocol.PREREGISTERED_SETTINGS["fresh_test_digest"] == protocol.FRESH_TEST_DIGEST
 
 
-def test_amendment2_no_record_yet_and_the_round2_record_is_unchanged() -> None:
-    assert protocol.RECORDED_EVALUATION is None
+def test_amendment2_record_is_the_057d2d8_run_and_the_round2_record_is_unchanged() -> None:
+    record = protocol.RECORDED_EVALUATION
+    assert record is not None and record is not protocol.ROUND2_RECORDED_EVALUATION
+    assert record["commit"] == "057d2d8ff3bc30ede1e67f74d610274e02986513"
+    assert record["notebook_blob"] == "6f13a083a88d4bc9fe67957b8d16f00e0fc27ada"
+    assert record["evidence"] == "docs/execution-evidence/2026-10-18-057d2d8/" and (ROOT / record["evidence"]).is_dir()
+    assert record["device_class"] == protocol.PREREGISTERED_SETTINGS["device_class"] == "t4"
+    assert record["grid_hash"] == "16768b30e5930007674d365a4b6a00d71b26927cc431bbebf96235988e38e544"
+    assert record["validation_ap"] == {"baseline": 0.0378, "C0": 0.8510, "C1": 0.9237, "C2": 0.8533}
+    fresh = record["fresh_test"]
+    assert record["fresh_pool"] == protocol.FRESH_TEST_POOL == {"n": 200, "seed": 1172}
+    assert (fresh["n_images"], fresh["n_references"]) == (200, 377)
+    assert (fresh["selected_ap"], fresh["baseline_ap"], fresh["ap_difference"]) == (0.914, 0.0365, 0.8775)
+    assert fresh["ci95"] == [0.8603, 0.8944] and fresh["verdict"] == "improved"
+    # The CPU default is the record's selection, C1 in both records.
+    assert protocol.RECORDED_SELECTION == record["selected_config"] == record["selected_system"] == "C1"
+    # The round-2 record stays as history, unchanged.
     assert protocol.ROUND2_RECORDED_EVALUATION["commit"].startswith("35dc06f")
     assert protocol.ROUND2_RECORDED_EVALUATION["fresh_test"]["ap_difference"] == 0.872
-    assert protocol.RECORDED_SELECTION == "C1"  # the CPU default stays the round-2 selection until the new record
+    assert protocol.ROUND2_RECORDED_EVALUATION["fresh_test"]["n_references"] == 413
+    assert protocol.ROUND2_RECORDED_EVALUATION["fresh_pool"] == protocol.ROUND2_FRESH_TEST_POOL == {"n": 200, "seed": 1170}
+
+
+def test_amendment2_record_is_what_the_committed_evidence_printed() -> None:
+    executed = ROOT / "docs" / "execution-evidence" / "2026-10-18-057d2d8" / "yolox_x_detection_finetune_colab_057d2d8_colab-cli-t4_output.ipynb"
+    text = "".join("".join(o.get("text", [])) for c in json.loads(executed.read_text(encoding="utf-8"))["cells"] for o in c.get("outputs", []))
+    record = protocol.RECORDED_EVALUATION
+    assert f"grid hash (two deterministic runs must print the same value): {record['grid_hash']}" in text
+    for quoted in ('"ap": 0.914,', '"ap": 0.0365,', '"n_references": 377', '"ap_difference": 0.8775,', "0.8603,", "0.8944",
+                   '"verdict": "improved"', '"selected_config": "C1"', "'test_look': 'pre-registered evaluation (this runtime)'"):
+        assert quoted in text, quoted
+
+
+def test_amendment2_with_the_record_set_a_fresh_runtime_scoring_is_a_reproduction_compared_with_057d2d8(harness, capsys) -> None:
+    run, ns, tmp = harness
+    ns["RECORDED_EVALUATION"] = protocol.RECORDED_EVALUATION
+    run()
+    assert not (tmp / f"{STEM}_evaluation_report.json").exists()
+    assert not (tmp / f"{STEM}_fresh_test_per_image.json").exists()
+    first = _report(tmp, "_reproduction_1")
+    assert first["test_look"] == protocol.TEST_LOOK_REPRODUCTION == "reproduction" and first["preregistered"] is True
+    assert first["fresh_test"]["pool"] == {"n": 200, "seed": 1172} and first["recorded_evaluation"] == protocol.RECORDED_EVALUATION
+    comparison = first["record_comparison"]
+    assert comparison["record"] == {"date": "2026-10-18", "commit": protocol.RECORDED_EVALUATION["commit"],
+                                    "notebook_blob": protocol.RECORDED_EVALUATION["notebook_blob"]}
+    assert "reproduction of the pre-registered evaluation of 2026-10-18 (commit 057d2d8):" in capsys.readouterr().out
+    run(sections=(9,))
+    assert _report(tmp, "_reproduction_2")["test_look"] == "reproduction"
+    assert not (tmp / f"{STEM}_evaluation_report.json").exists()
+
+
+def test_amendment2_compare_with_record_matches_the_057d2d8_numbers_at_printed_precision() -> None:
+    fresh = {
+        "selected": {"ap": 0.91403}, "baseline": {"ap": 0.03649}, "verdict": "improved",
+        "bootstrap": {"primary_ap_difference": 0.87754, "primary_ap_ci95": [0.86031, 0.89442]},
+    }
+    same = protocol.compare_with_record(protocol.RECORDED_EVALUATION, fresh, {"selected_config": "C1", "selected_system": "C1"})
+    assert same["matches"] is True and same["differing"] == [] and same["record"]["commit"].startswith("057d2d8")
+    # The round-2 numbers are a different pool: they do not match this record.
+    round2 = {"selected": {"ap": 0.9165}, "baseline": {"ap": 0.0445}, "verdict": "improved",
+              "bootstrap": {"primary_ap_difference": 0.872, "primary_ap_ci95": [0.8555, 0.8887]}}
+    other = protocol.compare_with_record(protocol.RECORDED_EVALUATION, round2, {"selected_config": "C1", "selected_system": "C1"})
+    assert other["differing"] == ["selected_ap", "baseline_ap", "ap_difference", "ci95"]
+
+
+def test_amendment2_notebook_quotes_the_record_and_no_longer_says_there_is_none(notebook: dict) -> None:
+    md = "".join("".join(c["source"]) for c in notebook["cells"] if c["cell_type"] == "markdown")
+    assert "no evaluation of record exists for it yet" not in md and "has no recorded number yet" not in md
+    assert "until the amendment-2 record exists" not in md
+    assert "AP 0.914" in md and "0.0365" in md and "+0.8775" in md and "[0.8603, 0.8944]" in md
+    assert "commit `057d2d8`, notebook blob `6f13a083`" in md
+    assert "98.8 s together" in md and "290.3 s wall" in md and "104.5 s" not in md and "306.7 s" not in md
 
 
 def test_amendment2_determinism_is_a_preregistered_setting_and_is_set_before_training() -> None:

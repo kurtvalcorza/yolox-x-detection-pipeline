@@ -50,8 +50,8 @@ GRID: tuple[dict[str, Any], ...] = (
     {"name": "C2", "epochs": 8, "learning_rate": 2e-3},
 )
 DEFAULT_CONFIG = "C0"
-# What a grid-off (CPU) run trains: the hosted record's selection (C1 in the 2026-10-18 T4 evaluation of record,
-# 35dc06f; C0 before it). A grid-off run is exploratory either way.
+# What a grid-off (CPU) run trains: the selection of the amendment-2 evaluation of record (C1; hosted T4, 057d2d8),
+# the same choice as the round-2 record (35dc06f); C0 before both. A grid-off run is exploratory either way.
 RECORDED_SELECTION = "C1"
 TIE_ORDER = ("C0", "C2", "C1")  # exact ties go to the smaller config (fewer epochs)
 TIE_TOLERANCE = 1e-9
@@ -92,8 +92,8 @@ PREREGISTERED_SETTINGS: dict[str, Any] = {
     "determinism": dict(DETERMINISM),  # amendment 2
 }
 
-# The hosted T4 run that is the evaluation of record (docs/release-verification.md, "Hosted T4 evaluation of record
-# (2026-10-18)"); values as printed by Sections 8 and 9 of that run (4 decimals). Later identical runs are reproductions.
+# Round 2's hosted T4 evaluation of record on fresh test 2, kept as history (docs/release-verification.md, "Hosted T4
+# evaluation of record (2026-10-18)"); values as printed by Sections 8 and 9 of that run (4 decimals).
 ROUND2_RECORDED_EVALUATION: dict[str, Any] = {
     "label": "pre-registered evaluation of record",
     "date": "2026-10-18",
@@ -114,11 +114,39 @@ ROUND2_RECORDED_EVALUATION: dict[str, Any] = {
         "ci95": [0.8555, 0.8887],
         "verdict": "improved",
     },
+    "fresh_pool": dict(ROUND2_FRESH_TEST_POOL),
+    "status": "history: the round-2 record on fresh test 2 (amendment 2 made that pool an exposed test)",
 }
 
 # Amendment 2: the evaluation of record is the first hosted T4 run that scores fresh test 3 with deterministic
-# training. None until that run exists; the round-2 record above stays as history and is never overwritten.
-RECORDED_EVALUATION: dict[str, Any] | None = None
+# training (docs/release-verification.md, "Amendment-2 evaluation of record: hosted T4 (2026-10-18, commit 057d2d8)");
+# values as printed by Sections 8 and 9 of that run (4 decimals). Its grid hash matched both masked determinism
+# checks. Every later identical pre-registered scoring, in any runtime, is a reproduction compared with it. The
+# round-2 record above stays as history and is never overwritten.
+RECORDED_EVALUATION: dict[str, Any] | None = {
+    "label": "pre-registered evaluation of record",
+    "date": "2026-10-18",
+    "runner": "Colab CLI, fresh hosted T4 session",
+    "device_class": "t4",
+    "commit": "057d2d8ff3bc30ede1e67f74d610274e02986513",
+    "notebook_blob": "6f13a083a88d4bc9fe67957b8d16f00e0fc27ada",
+    "evidence": "docs/execution-evidence/2026-10-18-057d2d8/",
+    "selected_config": "C1",
+    "selected_system": "C1",
+    "validation_ap": {"baseline": 0.0378, "C0": 0.8510, "C1": 0.9237, "C2": 0.8533},
+    "grid_hash": "16768b30e5930007674d365a4b6a00d71b26927cc431bbebf96235988e38e544",
+    "fresh_test": {
+        "n_images": 200,
+        "n_references": 377,
+        "selected_ap": 0.914,
+        "baseline_ap": 0.0365,
+        "ap_difference": 0.8775,
+        "ci95": [0.8603, 0.8944],
+        "verdict": "improved",
+    },
+    "fresh_pool": dict(FRESH_TEST_POOL),
+    "status": "the evaluation of record on fresh test 3 (amendment 2)",
+}
 
 TEST_LOOK_PREREGISTERED = "pre-registered evaluation (this runtime)"
 TEST_LOOK_REPRODUCTION = "reproduction"
