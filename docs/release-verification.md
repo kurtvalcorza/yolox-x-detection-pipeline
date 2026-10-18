@@ -240,6 +240,7 @@ These are recorded behaviour, not defects, and should survive future edits:
 | 2026-10-10 (10:07:41 UTC start) | Colab CLI 0.7.4 sequential execution (`colab exec -f`, not a browser Run all; order from `exec.log`, no execution counts), fresh Colab Tesla T4 VM (session `suite-yolox-d2b0bb2-8e69`), committed blob fetched at the commit and checked before the VM was allocated; kernel Python 3.13.15, isolated CPython 3.12.12 (32 locked packages, setup 51 s), `torch 2.14.0+cu130`, `torchvision 0.29.0+cu130`, `cuda:0`; default path, every form field at its default | `yolox_x_detection_finetune_colab.ipynb` (`NOTEBOOK_SOURCE.repository_revision` `a16f3b9435ca`, `module_sha256` `a38e51295351…`, generator `build_notebook.py/2.1-swc-yolox`, `notebook_spec` 2.2) | blob `af87b360649db9c2816635dc4c06d3962a5c600d` at commit `d2b0bb2e7909622c28da22351b52dc4c805b2343` | **PASS** — one pass, no restart, 0 errors; 24/24 code cells in order (cells 4–13, the ten carried modules, print nothing); 150.1 s wall; `yolox_x.pth` 793,463,373 bytes digest-verified; COCO scene 4/5 matched (IoU 0.974/0.943/0.975/0.000/0.918), nothing proposed on the ball; RGB order 3 detections (0.965/0.946/0.927), bench lost; blank and noise 0 boxes at demo thresholds; 30/10 split; baseline AP 0.0384 / AP50 0.0384 → adapted AP 0.8974 / AP50 1.0 / AP75 1.0; loss 5.6956 → 1.6057 in 19.2 s, `num_fg` 7.64–8.68, 11,793,304 of 98,997,304 parameters trained; new-data seed 99: all five objects correctly labelled, no spurious boxes; artifact 396,692,619 bytes over 894 tensors, fresh reload identical, tampered artifact refused. Evidence in `docs/execution-evidence/2026-10-10-d2b0bb2/`: executed notebook SHA-256 `2cd0ebe0f94d7825793a6c31c5b6d9a62054090401aadb94cc7fe2345a304646`, `run_summary.json` `d6d156c1160cf6e05454ce3b40ce875990c709691c8d72f5d17f1663b5658709`, `exec.log` `96da52125a7ef93cb91ad138c115d10ed2c1e795183d7d047e719ac2a0349aff`. Not exercised: both BYOD branches, the Section 12 activity, a browser Run all |
 | 2026-10-18 (09:01:01 UTC start) | Colab CLI 0.7.4 sequential execution (`colab exec -f`, not a browser Run all; order from `exec.log`, no execution counts), fresh Colab Tesla T4 VM (session `suite-yolox-35dc06f-8e69`), committed blob fetched at the commit and checked before the VM was allocated; kernel Python 3.13.15, isolated CPython 3.12.12 (32 locked packages, setup 54 s), `torch 2.14.0+cu130`, `torchvision 0.29.0+cu130`, `cuda:0`; default path, every form field at its default, grid on | `yolox_x_detection_finetune_colab.ipynb` (`NOTEBOOK_SOURCE.repository_revision` `106113a6c651`, `module_sha256` `c288f824b737…`, generator `build_notebook.py/2.2-swc-yolox`, `notebook_spec` 2.5) | blob `a90023b2b9bb43db2055da1e60197b87aade7f40` at commit `35dc06f07ad914834eb56cca5495f1fa0ee38906` | **PASS — pre-registered evaluation of record** (REL13: Colab CLI 0.7.4, fresh Colab Tesla T4, 2026-10-18, `35dc06f` / `a90023b2`; first hosted run of the pre-registered settings and amendment 1, first scoring of the fresh test) — one pass, no restart, 0 errors; 25/25 code cells in order; 306.7 s wall; grid C0 / C1 / C2 validation AP 0.8510 / **0.9237** / 0.8533 (AP50 1.0 each), C1 selected (+0.0727 over C0), keep-baseline +0.8859; fresh test (200 images, 413 boxes) C1 AP 0.9165 vs baseline 0.0445, +0.872, paired bootstrap 95 % CI [0.8555, 0.8887], **improved**; `test_look` "pre-registered evaluation (this runtime)"; exposed development test C1 0.9535 / 1.0 (baseline 0.0384); artifact 396,695,319 bytes over 894 tensors, fresh reload identical, tampered artifact refused. Evidence in `docs/execution-evidence/2026-10-18-35dc06f/`: executed notebook SHA-256 `3ea0532da150ffccae8caac90ec48c6d2547b93e8fd73115479f3dcdd005eb34`, `run_summary.json` `e2fb1e5eb65464b45c183e4400d793c6227bac3ec6fb51d25453c64f0c52eb98`, `exec.log` captured `a13f7b7302ab6f6208b059897a6e9ef3b6020e3d7ac3de4793d026b8df5ac1ac` (committed redacted `3b6e47921f2c…`). Not exercised: both BYOD branches, the Section 12 activity, a browser Run all. See "Hosted T4 evaluation of record (2026-10-18)" |
 | 2026-10-18 (13:43:42 UTC start) | Colab CLI 0.7.4 sequential execution (`colab exec -f`, not a browser Run all; order from `exec.log`, no execution counts), fresh Colab Tesla T4 VM (session `suite-yolox-057d2d8-8e69`), committed blob fetched at the commit and checked before the VM was allocated; kernel Python 3.13.15, isolated CPython 3.12.12 (32 locked packages, setup 49 s), `torch 2.14.0+cu130`, `torchvision 0.29.0+cu130`, `cuda:0`; determinism flags on (amendment 2); default path, every form field at its default | `yolox_x_detection_finetune_colab.ipynb` (`NOTEBOOK_SOURCE.repository_revision` `d3e8b320fa22`, `module_sha256` `bc9330519f98…`, generator `build_notebook.py/2.2-swc-yolox`, `notebook_spec` 2.5) | blob `6f13a083a88d4bc9fe67957b8d16f00e0fc27ada` at commit `057d2d8ff3bc30ede1e67f74d610274e02986513` | **PASS — amendment-2 evaluation of record** (first hosted run under amendment 2 that scores fresh test 3; first scoring of fresh test 3 by any run). One pass, no restart, 0 errors; 25/25 code cells in order (14 print output); 290.3 s wall. Grid hash `16768b30e593…`, equal to both masked determinism checks; grid C0 / C1 / C2 validation AP 0.8510 / 0.9237 / 0.8533 (AP50 1.0 each), C1 selected; fresh test 3 (seed 1172, 200 images, 377 boxes) C1 AP 0.914 vs baseline 0.0365, +0.8775, 95 % CI [0.8603, 0.8944], verdict *improved*; exposed development test C1 AP 0.9535 / AP50 1.0. Details and hashes: "Amendment-2 evaluation of record: hosted T4 (2026-10-18, commit 057d2d8)" below; evidence in `docs/execution-evidence/2026-10-18-057d2d8/`. Not exercised: both BYOD branches, a browser Run all |
+| 2026-10-18 (14:08:44 UTC start) | Colab CLI 0.7.4 sequential execution (`colab exec -f`, not a browser Run all; order from `exec.log`, no execution counts), fresh Colab Tesla T4 VM (session `suite-yolox-0c8bb09-8e69`), committed blob fetched at the commit and checked before the VM was allocated; kernel Python 3.13.15, isolated CPython 3.12.12 (32 locked packages, setup 51 s), `torch 2.14.0+cu130`, `torchvision 0.29.0+cu130`, `cuda:0`; determinism flags on (amendment 2); default path, every form field at its default | `yolox_x_detection_finetune_colab.ipynb` (`NOTEBOOK_SOURCE.repository_revision` `dc99dc71ee49`, `module_sha256` `80b966eefb12…`, generator `build_notebook.py/2.2-swc-yolox`, `notebook_spec` 2.5) | blob `ed433995dd1af1a8834ea0997e87b0c96a7a9d00` at commit `0c8bb09682367319f4e8895afa915b7567090dae` | **PASS — reproduction of the pre-registered evaluation** (reproduction 1 of the amendment-2 record `057d2d8`; second hosted look at fresh test 3). One pass, no restart, 0 errors; 25/25 code cells in order (14 print output); 310.9 s wall. Section 9 printed `test_look` "reproduction", wrote the `_reproduction_1` files and printed "matches the record". Grid hash `16768b30e593…`, equal to the record; every grid row (except fine-tune seconds) and all 24 epoch loss lines identical to the record; C1 selected; fresh test 3 C1 AP 0.914 vs baseline 0.0365, +0.8775, 95 % CI [0.8603, 0.8944], verdict *improved*, identical to the record. Details and hashes: "Amendment-2 reproduction 1: hosted T4 (2026-10-18, commit 0c8bb09)" below; evidence in `docs/execution-evidence/2026-10-18-0c8bb09/`. Not exercised: both BYOD branches, a browser Run all |
 
 ## 2026-10-05 review fixes — verification pending
 
@@ -512,7 +513,8 @@ See [`yolox-x-preregistration.md`](yolox-x-preregistration.md), amendment 2 (com
 - **Evaluation of record under amendment 2:** the Colab CLI T4 run of 2026-10-18 at commit `057d2d8` (blob
   `6f13a083`); see "Amendment-2 evaluation of record" below. It ran after the masked determinism check passed
   (two masked hosted T4 runs, identical grid hash, validation AP, selection and loss curves; see "Masked
-  determinism check" below). Hosted looks at fresh test 3: 1. Reproductions: none yet.
+  determinism check" below). Hosted looks at fresh test 3: 2. Reproductions: 1 (commit `0c8bb09`, blob `ed433995`,
+  identical to the record; see "Amendment-2 reproduction 1" below).
   *(State at the 057d2d8 revision, before the record existed:* `RECORDED_EVALUATION` is `None` and a grid-off
   CPU run keeps training the round-2 selection C1. Recording the amendment-2 record in `protocol.py`
   regenerates the notebook; until then a later identical hosted run labels itself "pre-registered evaluation
@@ -627,3 +629,56 @@ cannot be compared). On this row the round-2 T4 grid was therefore not moved by 
 (inferred from two runs). The exposed C1 AP (0.9535), the COCO, RGB, noise and new-data figures are also equal. The
 artifact has the same size but a different SHA-256 (`3bb88c6b…` in round 2); the code differs between the runs, so
 this is not attributed (not investigated). The round-2 record `35dc06f` stays as history.
+
+## Amendment-2 reproduction 1: hosted T4 (2026-10-18, commit 0c8bb09)
+
+**REL13 label for every number in this section:**
+- Runtime: Colab CLI 0.7.4 sequential execution (`colab exec -f`, not a browser Run all), fresh Colab Tesla T4
+  (session `suite-yolox-0c8bb09-8e69`, VM `…euw4c1-1g562wfunxhc`), started 2026-10-18 14:08:44 UTC, 310.9 s wall,
+  environment build 51 s. Section 8 printed `grid ON on Tesla T4`, `cuda:0` and the same determinism flags as the
+  record.
+- Code: commit `0c8bb09`, notebook blob `ed433995`, embedded revision `dc99dc7` (`dc99dc7..0c8bb09` only
+  regenerates the notebook), `module_sha256` `80b966ee…`. `057d2d8..0c8bb09` carries the record into
+  `RECORDED_EVALUATION` and requotes the worked answers; training, scoring and the pools are unchanged. Settings:
+  the round-2 settings, amendment 1, amendment 2 and every field at its default.
+- Role: **reproduction of the pre-registered evaluation** (reproduction 1 of the amendment-2 record `057d2d8`; the
+  second hosted look at fresh test 3). Section 9 printed `test_look` "reproduction" and "reproduction of the
+  pre-registered evaluation of 2026-10-18 (commit 057d2d8): matches the record". It wrote
+  `yolox_x_detection_evaluation_report_reproduction_1.json`,
+  `yolox_x_detection_fresh_test_per_image_reproduction_1.json` and (Section 11)
+  `yolox_x_detection_results_reproduction_1.json`; no unsuffixed report, per-image or results file. The adapter
+  keeps its usual name `yolox-x-detection-adapter.pt` (byte-identical to the record's, SHA-256 `42519d65c739…`).
+  Nothing was changed in response to the record's test number.
+- Evidence: `docs/execution-evidence/2026-10-18-0c8bb09/`. The executed notebook and `run_summary.json` were
+  copied byte for byte. In `exec.log`, lines 1 and 259 had the local run directory replaced with
+  `<local-run-dir>/`; nothing else changed.
+  - Captured SHA-256 of `exec.log`: `80c3e669bab936bfd068ec5d0c44015fb5523a1c6e98951aa363054b9d2fbab2`.
+  - Committed SHA-256 of `exec.log`: `ec391f2ef47d53fa433d2579aaeb3bec726b4ff3133790d6f01971c2898ea444`.
+  - `run_summary.json`: `f5f73ed375a65cfc8f967ae0f9a6fce0d53298da7081f5b12b696b830c7b3a6f`.
+  - Executed notebook: `d8a6bf1c24e00aa6af67f7b73fffaab39ffc1811a404a5ae1529107c1ad9a817` (equal to
+    `run_summary.json` `executed_sha256`).
+  - The input copy in the run directory is byte-equal to the committed notebook (git blob `ed433995`).
+  - `inspect_run.py`: 56/56 cells, same ids and order, source identity OK.
+
+**Match against the record.** A line diff of the two `exec.log` files (commit ids, VM name, object addresses
+and temporary paths normalised) differs only in: environment build 49 → 51 s, worker pid, the embedded revision
+and `module_sha256`, fine-tune seconds (C0 27.3 → 28.2, C1 38.4 → 39.7, C2 33.1 → 34.7), the `test_look` label,
+the `_reproduction_1` file names, the new "matches the record" line and the results-file size (27,432 → 27,419
+bytes, the shorter label). Everything else is identical:
+
+| Check | Record `057d2d8` | Reproduction `0c8bb09` |
+|---|---|---|
+| Grid hash | `16768b30e5930007…` | `16768b30e5930007…` (equal) |
+| Validation AP C0 / C1 / C2 | 0.8510 / 0.9237 / 0.8533 | equal (full precision) |
+| Final `total_loss` C0 / C1 / C2 | 1.60573 / 1.18546 / 1.78172 | equal |
+| Epoch loss lines (24) | — | all 24 identical |
+| Selection | C1 (+0.0727; keep-baseline 0.8859) | C1, same reason |
+| Fresh test 3 C1 / baseline AP | 0.914 / 0.0365 | 0.914 / 0.0365 |
+| Difference, 95 % CI | +0.8775 [0.8603, 0.8944] | +0.8775 [0.8603, 0.8944] |
+| Verdict | *improved* | *improved* |
+| Exposed development test C1 AP / AP50 | 0.9535 / 1.0 | 0.9535 / 1.0 |
+| Artifact | 396,695,319 B, 894 tensors, `42519d65…` | equal; reload 0.9237 / 1.0 |
+
+`compare_with_record` checks the selection and the fresh-test fields only; the grid hash and loss curves were
+compared from the logs. Determinism therefore held on a fourth T4 VM (after the two masked runs and the record).
+Status stays **Candidate**.
