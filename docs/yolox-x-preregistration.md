@@ -169,3 +169,41 @@ docs/release-verification.md). Nothing above is changed, and no setting or rule 
   The minimum detectable change (about 0.10 AP) was a planning figure and is not re-estimated.
 - **Record.** `RECORDED_EVALUATION` in `protocol.py` now carries this run; later identical hosted runs
   are reproductions.
+
+## Amendment 2 (2026-10-18): deterministic GPU training and a third fresh pool
+
+Committed alone, before the code that implements it. Shared design for both YOLOX rows (section 6 of the
+fixers' shared design, Kurt's ruling of 2026-10-18).
+
+**Why.** The sibling YOLOX-S row's hosted reproduction ran the same code and settings as its record and
+selected C0 where the record selected C1: C0's validation AP moved from 0.6966 to 0.8624 between two
+identical T4 runs. The cause is CUDA non-determinism, and a 0.03 selection margin sits inside that
+run-to-run noise. The same risk applies here: this row's record (commit `35dc06f`) selected C1 by
++0.0727 validation AP, one draw of a non-deterministic process.
+
+**What stays valid.** The round-2 evaluation of record (2026-10-18, commit `35dc06f`, fresh test
+`sign_dataset(200, seed=1170)`, verdict "improved", AP difference +0.872, CI [0.8555, 0.8887]) and its
+pool stay valid as history. It was the only hosted look at seed 1170. From now on that pool is the
+**exposed test (scored by the round-2 record)**: shown for continuity, decides nothing.
+
+**New fixed settings** (all enter the run-time `preregistered` check and are recorded in every report):
+- **Determinism:** `torch.backends.cudnn.deterministic = True`; `torch.backends.cudnn.benchmark = False`;
+  `torch.use_deterministic_algorithms(True)` (never `warn_only`); `CUBLAS_WORKSPACE_CONFIG=:4096:8`, set
+  before CUDA initialises; `torch`, `torch.cuda`, `numpy` and `random` seeded; no DataLoader workers
+  (the fine-tune batches in-process). An op with no deterministic CUDA kernel raises; it is then named
+  and replaced, or the run stops. Nothing falls back silently.
+- **Fresh test 3:** `sign_dataset(200, seed=1172)`, never generated before this amendment, pinned by
+  SHA-256 under Pillow 11.3.0 and disjoint from every earlier pool by image and box layout.
+
+**Unchanged:** the validation pool, the grid, the selection margins, the keep-baseline rule, the reading
+rule and the bootstrap.
+
+**The new evaluation of record.** The first hosted T4 run under amendment 2 that scores fresh test 3,
+labelled "pre-registered evaluation (this runtime)"; later identical hosted runs are reproductions.
+Before it, a **masked determinism check**: two masked hosted T4 runs of the grid
+(`DIMER_MASK_FRESH_TEST=1`, fresh test never generated). Both must print identical grid numbers:
+validation AP to every printed digit, the selection, the loss curves, and the grid hash Section 8 prints.
+If they differ, STOP: there is no run of record.
+
+**CPU default.** A grid-off CPU run keeps training the round-2 record's selection (C1) until the
+amendment-2 record exists. It stays exploratory.
