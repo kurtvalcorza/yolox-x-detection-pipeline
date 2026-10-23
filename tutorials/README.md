@@ -4,7 +4,7 @@
 
 | Notebook | Profile | Mode | Spec | Standalone | Workflow | Runtime | Sample | BYOD | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| [`yolox_x_detection_finetune_colab.ipynb`](yolox_x_detection_finetune_colab.ipynb) | `E2E` | `GUIDED` | DIMER Notebook Specification 2.5 (standalone, §4; isolated `uv` environment, no runtime restart) | yes | COCO detection, then validate → split → baseline → bounded SimOTA fine-tune → evaluate → new-data inference → export → fresh reload | CPU (GPU used automatically when present) | automatic, drawn in code | optional, two branches, both off by default; image by `BYOD_IMAGE_PATH` or upload, dataset by `BYOD_DATASET_DIR` (`annotations.json` + images) or upload, through adaptation, reload and a result JSON | Candidate (amendment-2 evaluation of record: fresh Colab T4, 2026-10-18, blob `6f13a083`, deterministic GPU; C1 selected, fresh test 3 +0.8775, *improved*; round-2 record, blob `a90023b2`: +0.872, history) |
+| [`yolox_x_detection_finetune_colab.ipynb`](yolox_x_detection_finetune_colab.ipynb) | `E2E` | `GUIDED` | DIMER Notebook Specification 2.5 (standalone, §4; isolated `uv` environment, no runtime restart) | yes | COCO detection, then validate → split → baseline → bounded SimOTA fine-tune → evaluate → new-data inference → export → fresh reload | CPU (GPU used automatically when present) | automatic, drawn in code | optional, two branches, both off by default; image by `BYOD_IMAGE_PATH` or upload, dataset by `BYOD_DATASET_DIR` (`annotations.json` + images) or upload, through adaptation, reload and a result JSON | Candidate, pending only REL12 and REL2 (current blob `d4c103ed`, commit `ca77e09`: default path and Section 14 activity on fresh Colab T4, 2026-10-23, 25/25 cells each; fresh test 3 matches the amendment-2 record, +0.8775, *improved*; safetensors artifact reloaded exactly, tampering refused; runs of earlier blobs are history) |
 
 Candidate status and the gates that remain open are recorded in
 [`../docs/release-verification.md`](../docs/release-verification.md); clean-room execution on Kaggle Tesla T4 GPU is recorded in
@@ -35,7 +35,7 @@ behind a default-off flag:
 9. Re-check every pre-registered setting, then score a 200-image fresh test against the baseline with a paired
    image bootstrap; the 10-image exposed development test is shown for continuity and decides nothing.
 10. Detect on images from an unseen seed.
-11. Export the artifact, reload it from disk, and assert the reloaded model scores identically.
+11. Export the artifact (`yolox-x-detection-adapter.safetensors` state dict plus a `yolox-x-detection-adapter.json` sidecar with its SHA-256; no pickle), reload it from disk, and assert the reloaded model scores identically.
 12. Write every result as JSON with provenance.
 13. Optional BYOD: your own image, or your own labelled dataset through the same local stages.
 
