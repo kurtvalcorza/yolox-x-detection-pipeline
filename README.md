@@ -24,7 +24,7 @@ records = sign_dataset(40, seed=0)                                    # your own
 adapter = YoloxXDetectionPipeline.from_pretrained(class_names=SIGN_CLASSES, seed=0)
 adapter.finetune(records[:30], epochs=6)
 print(adapter.evaluate(records[30:])["ap50"])
-adapter.save_artifact("outputs/yolox-x-detection-adapter.pt")
+adapter.save_artifact("outputs/yolox-x-detection-adapter.safetensors")  # + yolox-x-detection-adapter.json sidecar
 ```
 
 ## Why the model code is vendored
