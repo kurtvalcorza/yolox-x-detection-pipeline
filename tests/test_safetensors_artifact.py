@@ -175,7 +175,7 @@ def test_header_is_canonical_with_sorted_keys(exported) -> None:
 
 
 def test_saves_are_byte_identical_within_and_across_processes(adapted_pipe, exported, tmp_path) -> None:
-    """safetensors 0.8 orders metadata keys per process, so determinism is also checked in a fresh interpreter."""
+    """safetensors 0.8 orders metadata keys per process, so a fresh interpreter is checked too."""
     import subprocess
     import sys
     from pathlib import Path
