@@ -199,6 +199,27 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _canonical_safetensors_bytes(state: dict[str, Any], metadata: dict[str, str]) -> bytes:
+    """Serialize ``state`` as safetensors with a canonical header, so identical inputs give identical bytes.
+
+    safetensors 0.8 writes the ``__metadata__`` keys in hash-map order, which differs between
+    processes, so the same weights and metadata could produce different files and different SHA-256s.
+    The header is re-emitted here as compact JSON with sorted keys (top level and metadata), padded with
+    spaces to an 8-byte boundary as safetensors itself pads it. Tensor offsets are relative to the end
+    of the header, so the data block is carried over byte for byte.
+    """
+    from safetensors.torch import save
+
+    raw = save(state, metadata=metadata)
+    header_len = int.from_bytes(raw[:8], "little")
+    header = json.loads(raw[8 : 8 + header_len])
+    if "__metadata__" in header:
+        header["__metadata__"] = dict(sorted(header["__metadata__"].items()))
+    encoded = json.dumps(header, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    encoded += b" " * (-len(encoded) % 8)
+    return len(encoded).to_bytes(8, "little") + encoded + raw[8 + header_len :]
+
+
 # --- Snapshot ---------------------------------------------------------------------------------
 
 
@@ -1308,14 +1329,14 @@ class YoloxXDetectionPipeline:
         """Write the adapted weights and their provenance as a safetensors file plus a JSON sidecar.
 
         ``path`` must end in ``.safetensors``. That file holds the state dict only, written with
-        ``safetensors.torch.save_file`` (tensors, no pickle, nothing that runs code when read). The
+        ``safetensors.torch.save`` (tensors, no pickle, nothing that runs code when read) with its
+        header re-emitted with sorted keys, so the same weights always give the same bytes. The
         sidecar ``<name>.json`` beside it holds the metadata as plain JSON strings, numbers, booleans and
         lists: the format tag, pinned identity, model key, class vocabulary, architecture constants, the
         digest of the base weights and the SHA-256 of the weights file, which ``load_artifact`` checks
         before it opens the weights. No ``.pt`` is written.
         """
         import torch
-        from safetensors.torch import save_file
 
         artifact_path = Path(path)
         if artifact_path.suffix != ARTIFACT_WEIGHTS_SUFFIX:
@@ -1325,7 +1346,7 @@ class YoloxXDetectionPipeline:
             )
         sidecar_path = artifact_path.with_suffix(ARTIFACT_SIDECAR_SUFFIX)
         artifact_path.parent.mkdir(parents=True, exist_ok=True)
-        # save_file refuses tensors that share storage and requires contiguous ones. YOLOX ties no
+        # safetensors refuses tensors that share storage and requires contiguous ones. YOLOX ties no
         # weights, but each tensor is still cloned into its own contiguous CPU storage so a shared or
         # strided view can never reach the writer; load_state_dict(strict=True) restores it exactly.
         state = {
@@ -1337,7 +1358,11 @@ class YoloxXDetectionPipeline:
         # a half-written artifact in place of the previous one. The weights land first, then the sidecar
         # that names their digest.
         partial = artifact_path.with_name(f"{artifact_path.name}.partial")
-        save_file(state, str(partial), metadata={"format": ARTIFACT_FORMAT, "model_key": MODEL_KEY})
+        # Canonical header (sorted keys): safetensors 0.8 alone writes the metadata keys in a
+        # per-process order, which would make the bytes, and so weights_sha256, vary between saves.
+        partial.write_bytes(
+            _canonical_safetensors_bytes(state, {"format": ARTIFACT_FORMAT, "model_key": MODEL_KEY})
+        )
         weights_sha256 = _sha256(partial)
         sidecar = {
             "format": ARTIFACT_FORMAT,

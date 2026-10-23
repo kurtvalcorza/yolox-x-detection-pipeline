@@ -40,7 +40,8 @@ Two protections, in this order:
    not vendored.
 
 Exported adapters are **not** pickles. `save_artifact` writes the adapted state dict as
-`yolox-x-detection-adapter.safetensors` (tensors only, via `safetensors.torch.save_file`) and its metadata as a
+`yolox-x-detection-adapter.safetensors` (tensors only, via `safetensors.torch.save`, header keys sorted so the
+same weights always give the same bytes) and its metadata as a
 plain-JSON sidecar `yolox-x-detection-adapter.json` that also records the SHA-256 of the weights file.
 `load_artifact` reads the sidecar, refuses a foreign format tag, a mismatched pinned identity or model
 key, or a weights file whose SHA-256 differs from the sidecar's, all before the weights are opened,
