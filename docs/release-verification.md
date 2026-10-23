@@ -789,3 +789,14 @@ nothing else changed. Both input copies in the run directories are byte-equal to
   tag with "artifact format 'not-a-dimer-artifact/9' != 'dimer-yolox-detection-adapter/2'".
 
 Not exercised by either run: both BYOD branches (REL12) and a browser Run all. Status stays **Candidate**.
+
+## Deterministic safetensors header (2026-10-24)
+
+`safetensors==0.8.0` writes the `__metadata__` keys in hash-map order, which changes between processes
+(eight processes saving the same four keys produced seven different orders), so two exports of the same
+weights could differ in bytes and in `weights_sha256`. `save_artifact` now serializes with
+`safetensors.torch.save` and re-emits the header as compact JSON with sorted keys, padded to an 8-byte
+boundary; the tensor data block is unchanged. The format tag stays `dimer-yolox-detection-adapter/2`: the
+reader is unchanged and earlier `/2` files still load. Covered by unit tests (byte-identical saves in two
+fresh processes, canonical header, no pickle or zip framing). No hosted run has been recorded for this
+change yet.

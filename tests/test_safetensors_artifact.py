@@ -160,3 +160,70 @@ def test_pickle_paths_are_refused_on_save_and_on_load(adapted_pipe, tmp_path) ->
     torch.save({"format": "dimer-yolox-detection-adapter/1", "state_dict": {}}, legacy)
     with pytest.raises(ValueError, match="pickle"):
         YoloxXDetectionPipeline.load_artifact(legacy)
+
+
+def test_header_is_canonical_with_sorted_keys(exported) -> None:
+    out, _ = exported
+    raw = (out / ARTIFACT_FILE).read_bytes()
+    header_len = int.from_bytes(raw[:8], "little")
+    assert header_len % 8 == 0
+    text = raw[8 : 8 + header_len].decode("utf-8").rstrip(" ")
+    header = json.loads(text)
+    assert text == json.dumps(header, sort_keys=True, separators=(",", ":"))
+    assert list(header["__metadata__"]) == sorted(header["__metadata__"])
+    assert header["__metadata__"] == {"format": ARTIFACT_FORMAT, "model_key": MODEL_KEY}
+
+
+def test_saves_are_byte_identical_within_and_across_processes(adapted_pipe, exported, tmp_path) -> None:
+    """safetensors 0.8 orders metadata keys per process, so a fresh interpreter is checked too."""
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    out, descriptor = exported
+    again = adapted_pipe.save_artifact(tmp_path / "in-process" / ARTIFACT_FILE)
+    assert again["sha256"] == descriptor["sha256"]
+
+    state_path = tmp_path / "state.safetensors"
+    from safetensors.torch import save_file
+
+    save_file({k: v.contiguous() for k, v in adapted_pipe.model.state_dict().items()}, str(state_path))
+    script = (
+        "import sys, torch\n"
+        "from safetensors.torch import load_file\n"
+        "from yolox_x_detection_pipeline.pipeline import YoloxXDetectionPipeline as P\n"
+        "model = P._build(3).eval()\n"
+        "model.load_state_dict(load_file(sys.argv[1]), strict=True)\n"
+        "pipe = P(model=model, device='cpu', class_names=('stop-sign', 'yield-sign', 'speed-limit-sign'),\n"
+        "         source='test', base_state_digest='0' * 64, adapted=True)\n"
+        "print(pipe.save_artifact(sys.argv[2], notes='unit test')['sha256'])\n"
+    )
+    src = str(Path(pipeline_module.__file__).resolve().parents[1])
+    env = {**__import__("os").environ, "PYTHONPATH": src, "CUDA_VISIBLE_DEVICES": "-1"}
+    digests = set()
+    for index in range(1):
+        target = tmp_path / f"proc{index}" / ARTIFACT_FILE
+        result = subprocess.run(
+            [sys.executable, "-c", script, str(state_path), str(target)],
+            capture_output=True, text=True, env=env, check=True,
+        )
+        digests.add(result.stdout.strip())
+        assert target.read_bytes() == (out / ARTIFACT_FILE).read_bytes()
+    assert digests == {descriptor["sha256"]}
+
+
+def test_weights_file_has_no_pickle_or_zip_framing(exported) -> None:
+    """The file is exactly length prefix + JSON header + contiguous tensor bytes; nothing else fits in it."""
+    out, _ = exported
+    raw = (out / ARTIFACT_FILE).read_bytes()
+    header_len = int.from_bytes(raw[:8], "little")
+    header = json.loads(raw[8 : 8 + header_len])
+    assert raw[8:9] == b"{"
+    spans = sorted(tuple(v["data_offsets"]) for k, v in header.items() if k != "__metadata__")
+    assert spans[0][0] == 0
+    assert all(a[1] == b[0] for a, b in zip(spans, spans[1:], strict=False))
+    assert 8 + header_len + spans[-1][1] == len(raw)
+    # Neither a pickle protocol marker nor a zip local-file header can open any part of the file.
+    assert not raw.startswith((b"\x80", b"PK\x03\x04"))
+    assert b"PK\x03\x04" not in raw[: 8 + header_len]
+    assert not any(marker in raw[: 8 + header_len] for marker in (b"\x80\x02", b"\x80\x04", b"\x80\x05"))
