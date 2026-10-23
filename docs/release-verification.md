@@ -241,6 +241,8 @@ These are recorded behaviour, not defects, and should survive future edits:
 | 2026-10-18 (09:01:01 UTC start) | Colab CLI 0.7.4 sequential execution (`colab exec -f`, not a browser Run all; order from `exec.log`, no execution counts), fresh Colab Tesla T4 VM (session `suite-yolox-35dc06f-8e69`), committed blob fetched at the commit and checked before the VM was allocated; kernel Python 3.13.15, isolated CPython 3.12.12 (32 locked packages, setup 54 s), `torch 2.14.0+cu130`, `torchvision 0.29.0+cu130`, `cuda:0`; default path, every form field at its default, grid on | `yolox_x_detection_finetune_colab.ipynb` (`NOTEBOOK_SOURCE.repository_revision` `106113a6c651`, `module_sha256` `c288f824b737…`, generator `build_notebook.py/2.2-swc-yolox`, `notebook_spec` 2.5) | blob `a90023b2b9bb43db2055da1e60197b87aade7f40` at commit `35dc06f07ad914834eb56cca5495f1fa0ee38906` | **PASS — pre-registered evaluation of record** (REL13: Colab CLI 0.7.4, fresh Colab Tesla T4, 2026-10-18, `35dc06f` / `a90023b2`; first hosted run of the pre-registered settings and amendment 1, first scoring of the fresh test) — one pass, no restart, 0 errors; 25/25 code cells in order; 306.7 s wall; grid C0 / C1 / C2 validation AP 0.8510 / **0.9237** / 0.8533 (AP50 1.0 each), C1 selected (+0.0727 over C0), keep-baseline +0.8859; fresh test (200 images, 413 boxes) C1 AP 0.9165 vs baseline 0.0445, +0.872, paired bootstrap 95 % CI [0.8555, 0.8887], **improved**; `test_look` "pre-registered evaluation (this runtime)"; exposed development test C1 0.9535 / 1.0 (baseline 0.0384); artifact 396,695,319 bytes over 894 tensors, fresh reload identical, tampered artifact refused. Evidence in `docs/execution-evidence/2026-10-18-35dc06f/`: executed notebook SHA-256 `3ea0532da150ffccae8caac90ec48c6d2547b93e8fd73115479f3dcdd005eb34`, `run_summary.json` `e2fb1e5eb65464b45c183e4400d793c6227bac3ec6fb51d25453c64f0c52eb98`, `exec.log` captured `a13f7b7302ab6f6208b059897a6e9ef3b6020e3d7ac3de4793d026b8df5ac1ac` (committed redacted `3b6e47921f2c…`). Not exercised: both BYOD branches, the Section 12 activity, a browser Run all. See "Hosted T4 evaluation of record (2026-10-18)" |
 | 2026-10-18 (13:43:42 UTC start) | Colab CLI 0.7.4 sequential execution (`colab exec -f`, not a browser Run all; order from `exec.log`, no execution counts), fresh Colab Tesla T4 VM (session `suite-yolox-057d2d8-8e69`), committed blob fetched at the commit and checked before the VM was allocated; kernel Python 3.13.15, isolated CPython 3.12.12 (32 locked packages, setup 49 s), `torch 2.14.0+cu130`, `torchvision 0.29.0+cu130`, `cuda:0`; determinism flags on (amendment 2); default path, every form field at its default | `yolox_x_detection_finetune_colab.ipynb` (`NOTEBOOK_SOURCE.repository_revision` `d3e8b320fa22`, `module_sha256` `bc9330519f98…`, generator `build_notebook.py/2.2-swc-yolox`, `notebook_spec` 2.5) | blob `6f13a083a88d4bc9fe67957b8d16f00e0fc27ada` at commit `057d2d8ff3bc30ede1e67f74d610274e02986513` | **PASS — amendment-2 evaluation of record** (first hosted run under amendment 2 that scores fresh test 3; first scoring of fresh test 3 by any run). One pass, no restart, 0 errors; 25/25 code cells in order (14 print output); 290.3 s wall. Grid hash `16768b30e593…`, equal to both masked determinism checks; grid C0 / C1 / C2 validation AP 0.8510 / 0.9237 / 0.8533 (AP50 1.0 each), C1 selected; fresh test 3 (seed 1172, 200 images, 377 boxes) C1 AP 0.914 vs baseline 0.0365, +0.8775, 95 % CI [0.8603, 0.8944], verdict *improved*; exposed development test C1 AP 0.9535 / AP50 1.0. Details and hashes: "Amendment-2 evaluation of record: hosted T4 (2026-10-18, commit 057d2d8)" below; evidence in `docs/execution-evidence/2026-10-18-057d2d8/`. Not exercised: both BYOD branches, a browser Run all |
 | 2026-10-18 (14:08:44 UTC start) | Colab CLI 0.7.4 sequential execution (`colab exec -f`, not a browser Run all; order from `exec.log`, no execution counts), fresh Colab Tesla T4 VM (session `suite-yolox-0c8bb09-8e69`), committed blob fetched at the commit and checked before the VM was allocated; kernel Python 3.13.15, isolated CPython 3.12.12 (32 locked packages, setup 51 s), `torch 2.14.0+cu130`, `torchvision 0.29.0+cu130`, `cuda:0`; determinism flags on (amendment 2); default path, every form field at its default | `yolox_x_detection_finetune_colab.ipynb` (`NOTEBOOK_SOURCE.repository_revision` `dc99dc71ee49`, `module_sha256` `80b966eefb12…`, generator `build_notebook.py/2.2-swc-yolox`, `notebook_spec` 2.5) | blob `ed433995dd1af1a8834ea0997e87b0c96a7a9d00` at commit `0c8bb09682367319f4e8895afa915b7567090dae` | **PASS — reproduction of the pre-registered evaluation** (reproduction 1 of the amendment-2 record `057d2d8`; second hosted look at fresh test 3). One pass, no restart, 0 errors; 25/25 code cells in order (14 print output); 310.9 s wall. Section 9 printed `test_look` "reproduction", wrote the `_reproduction_1` files and printed "matches the record". Grid hash `16768b30e593…`, equal to the record; every grid row (except fine-tune seconds) and all 24 epoch loss lines identical to the record; C1 selected; fresh test 3 C1 AP 0.914 vs baseline 0.0365, +0.8775, 95 % CI [0.8603, 0.8944], verdict *improved*, identical to the record. Details and hashes: "Amendment-2 reproduction 1: hosted T4 (2026-10-18, commit 0c8bb09)" below; evidence in `docs/execution-evidence/2026-10-18-0c8bb09/`. Not exercised: both BYOD branches, a browser Run all |
+| 2026-10-23 (13:59:33 UTC start) | Colab CLI sequential execution (`colab exec -f`, not a browser Run all; order from `exec.log`, no execution counts), fresh Colab Tesla T4 VM (session `suite-yolox-ca77e09-8e69`), committed blob fetched at the commit and checked before the VM was allocated; kernel Python 3.13.15, isolated CPython 3.12.12 (33 locked packages, setup 69 s), `cuda:0`; determinism flags on (amendment 2); default path, every form field at its default | `yolox_x_detection_finetune_colab.ipynb` (`NOTEBOOK_SOURCE.repository_revision` `6069f14df1bc`, `module_sha256` `4bf6b6b5f596…`, generator `build_notebook.py/2.2-swc-yolox`, `notebook_spec` 2.5) | blob `d4c103eda7e171097451b0ab154f973e44671528` at commit `ca77e09394fd36634f697001dd9a0dee8a60dbc2` | **PASS — default path of the safetensors export** (first hosted run of this blob). One pass, no restart, 0 errors; 25/25 code cells in order (14 print output); 436.2 s wall. Grid hash `16768b30e593…`, equal to the record; C1 selected; Section 9 printed `test_look` "reproduction" and "matches the record" (fresh test 3 C1 AP 0.914 vs baseline 0.0365, +0.8775, 95 % CI [0.8603, 0.8944], *improved*). Section 11 wrote `outputs/yolox-x-detection-adapter.safetensors` (396,493,056 bytes, SHA-256 `a024ededec23…`) and `outputs/yolox-x-detection-adapter.json`, no `.pt`; fresh reload 0.9237 / 1.0, exactly the selected system's validation scores; flipped weight byte and edited format tag both refused. Details and hashes: "Safetensors artifact export: hosted T4 (2026-10-23, commit ca77e09)" below; evidence in `docs/execution-evidence/2026-10-23-ca77e09/`. Not exercised: both BYOD branches, a browser Run all |
+| 2026-10-23 (14:04:31 UTC start) | As the row above, on a second fresh Colab Tesla T4 VM (same session name, second account; setup 70 s); run copy with one edit, `FREEZE_BACKBONE = True` → `False` (Section 8 form, cell 44 of 56) | run copy of `yolox_x_detection_finetune_colab.ipynb` (git blob `ba036648`) | blob `d4c103eda7e171097451b0ab154f973e44671528` at commit `ca77e09394fd36634f697001dd9a0dee8a60dbc2` | **PASS — Section 14 activity (unfreeze the backbone)**. One pass, no restart, 0 errors; 25/25 code cells in order (14 print output); 427.7 s wall. 98,997,304 of 98,997,304 parameters trained; grid C0 / C1 / C2 validation AP 0.5213 / 0.7384 / 0.1137, C1 selected; Section 9 printed `test_look` "not scored (exploratory)" and "fresh test not scored: settings differ from the pre-registration: ['freeze_backbone']". Section 11 wrote the `.safetensors` (396,493,056 bytes, SHA-256 `049468fc01fa…`) and `.json` sidecar, no `.pt`; reload 0.7384 / 1.0; both tamper checks refused. Evidence in `docs/execution-evidence/2026-10-23-ca77e09-activity/`. Not exercised: both BYOD branches, a browser Run all |
 
 ## 2026-10-05 review fixes — verification pending
 
@@ -683,7 +685,7 @@ bytes, the shorter label). Everything else is identical:
 compared from the logs. Determinism therefore held on a fourth T4 VM (after the two masked runs and the record).
 Status stays **Candidate**.
 
-## Safetensors artifact export (2026-10-23) — hosted run pending
+## Safetensors artifact export (2026-10-23)
 
 Code commit `6069f14` changes the exported adapter from one `torch.save` pickle (`yolox-x-detection-adapter.pt`, format
 `dimer-yolox-detection-adapter/1`) to format `/2`: the state dict as `yolox-x-detection-adapter.safetensors` (written with
@@ -695,5 +697,95 @@ are refused. `safetensors==0.8.0` joins the pins and the hash lock.
 
 The regenerated notebook `yolox_x_detection_finetune_colab.ipynb` is blob `d4c103eda7e171097451b0ab154f973e44671528`. **REL14:** every row under
 "Recorded executions" ran an earlier blob; those rows, and the artifact sizes and digests quoted above, are
-history for the `.pt` export and are not evidence for this blob. A hosted T4 run of this blob is pending and
-will be recorded here. Unit tests, the validator and the parity check pass on CPU; that is static evidence only.
+history for the `.pt` export and are not evidence for this blob. The hosted T4 runs of this blob are recorded in
+the next section.
+
+### Current status
+
+- Current notebook: blob `d4c103eda7e171097451b0ab154f973e44671528` at commit `ca77e09`.
+- Default path: **covered** by a fresh Colab T4 run on 2026-10-23 (25/25 code cells, 0 errors, 436.2 s).
+- Section 14 activity (unfreeze the backbone, `FREEZE_BACKBONE = False`): **covered** by a second fresh Colab T4
+  run on 2026-10-23 (25/25 code cells, 0 errors, 427.7 s).
+- Status: **Candidate**, pending only REL12 (the BYOD journey in a browser) and REL2.
+- REL14: runs of earlier blobs, including every row above the two 2026-10-23 rows in "Recorded executions", are
+  history and are not evidence for this blob.
+
+## Safetensors artifact export: hosted T4 (2026-10-23, commit ca77e09)
+
+**REL13 label for every number in this section:**
+- Runtime: Colab CLI sequential execution (`colab exec -f`, not a browser Run all), fresh Colab Tesla T4 VMs in
+  session `suite-yolox-ca77e09-8e69`. Default: VM `…usw4a1-2103p3avhkkch`, started 2026-10-23 13:59:33 UTC,
+  436.2 s wall, environment build 69 s. Activity: VM `…usw1b0-20v5ohf8gp3b6`, started 14:04:31 UTC, 427.7 s wall,
+  environment build 70 s. Both printed `grid ON on Tesla T4`, `cuda:0` and the amendment-2 determinism flags.
+- Code: commit `ca77e09`, notebook blob `d4c103ed`, embedded revision `6069f14` (`6069f14..ca77e09` only
+  regenerates the notebook), `module_sha256` `4bf6b6b5f596…`, 33 locked packages (`safetensors==0.8.0` added).
+- Settings: default run, every field at its default. Activity run: a run copy (git blob `ba036648`, SHA-256
+  `122483f7…`) that differs from blob `d4c103ed` only in cell 44, `FREEZE_BACKBONE = True` → `False`.
+
+**Evidence.** The executed notebooks were renamed without `_output` and with the run label added; their bytes,
+`run_summary.json` and `run_copy.ipynb` were copied byte for byte. In each `exec.log`, the two lines that named the
+local run directory (default lines 1 and 262, activity lines 1 and 231) had it replaced with `<local-run-dir>/`;
+nothing else changed. Both input copies in the run directories are byte-equal to the committed notebook (git blob
+`d4c103ed`), and every executed notebook has 56/56 cells with sources equal to its input.
+
+| File | Captured SHA-256 | Committed SHA-256 |
+|---|---|---|
+| `2026-10-23-ca77e09/yolox_x_detection_finetune_colab_ca77e09_colab-cli-t4.ipynb` | `b8de576fa6643ddd29414f27dc38b1051f8c920655dc54173bd96c038a120c9b` (= `executed_sha256`) | same |
+| `2026-10-23-ca77e09/run_summary.json` | `fc6a56b3024df4120b14a9dda2d0703c86c1f6d6cfbc7cf78d10a39ef04cf370` | same |
+| `2026-10-23-ca77e09/exec.log` | `d30befb35346d3311f1ab92b7589cbc1837bcb9dadbbb162af1e84a6bc02a0aa` | `b56a01e625d4e418a9706af3fdf61152ae6e27f6e481a42802a9f46ca557c82a` (redacted) |
+| `2026-10-23-ca77e09-activity/yolox_x_detection_finetune_colab_ca77e09_colab-cli-t4_activity.ipynb` | `d3680b0afb45b2a6098e9bddb35912c077d403462a20a8b7914fcdbc0bd5ca3a` (= `executed_sha256`) | same |
+| `2026-10-23-ca77e09-activity/run_copy.ipynb` | `122483f7bcf355649fbba04d51ab8a5ec57584dad55287657ddcd45b6da1c05f` (= `run_copy_sha256`) | same |
+| `2026-10-23-ca77e09-activity/run_summary.json` | `73286cfb68108ca89a2235ef60453739a37bfd43c7e1763b51dd61b57e35791a` | same |
+| `2026-10-23-ca77e09-activity/exec.log` | `cd41607cf3a864ce8905ae0ac50ec721801d0818db3871c847a5fb99b7f3e7ba` | `7143cc2d9d00b41ea61b05fcc7e8557aba5b065d210d71dccd9146eae263a9a0` (redacted) |
+
+**Default path.**
+- Grid: grid hash `16768b30e5930007674d365a4b6a00d71b26927cc431bbebf96235988e38e544`, equal to the record. C0 / C1 /
+  C2 validation AP 0.8510 / 0.9237 / 0.8533 (AP50 1.0 each), final `total_loss` 1.60573 / 1.18546 / 1.78172, equal
+  to the record; fine-tune seconds 29.8 / 45.9 / 37.0. C1 selected (+0.0727 over C0; keep-baseline 0.8859).
+  11,793,304 of 98,997,304 parameters trained.
+- Section 9 printed `test_look` "reproduction", wrote the `_reproduction_1` files and printed "reproduction of the
+  pre-registered evaluation of 2026-10-18 (commit 057d2d8): matches the record". Fresh test 3 (200 images, 377
+  boxes): C1 AP 0.914 / AP50 1.0 against the baseline's 0.0365 / 0.0365, difference +0.8775, 95 % CI [0.8603,
+  0.8944], verdict *improved*, identical to the record. Exposed development test C1 AP 0.9535 / AP50 1.0.
+- Section 11, the artifact, as printed:
+
+  ```
+  "path": "outputs/yolox-x-detection-adapter.safetensors",
+  "bytes": 396493056,
+  "sha256": "a024ededec2337b8bb6485642c7d740fe42d99d0013b06844d3f81ab66134059",
+  "sidecar": "outputs/yolox-x-detection-adapter.json",
+  "sidecar_sha256": "6fcfb8565ab7251b92999573010cc5c0e32e0244d38328de9a657de91223b8ba",
+  "format": "dimer-yolox-detection-adapter/2",
+  "tensors": 894,
+  ```
+
+  The printed output listing is `['grid', 'work', 'yolox-x-detection-adapter.json',
+  'yolox-x-detection-adapter.safetensors', 'yolox_x_detection_evaluation_report_reproduction_1.json',
+  'yolox_x_detection_fresh_test_per_image_reproduction_1.json', 'yolox_x_detection_results_reproduction_1.json']`:
+  no `.pt` file.
+- Reload, exactly as printed: `{'reloaded_val_ap': 0.9237, 'reloaded_val_ap50': 1.0}` and "fresh reload reproduces
+  the selected system validation scores exactly".
+- Tamper refusals, exactly as printed:
+  - "tampered artifact (one weight byte flipped) refused -> artifact weights digest mismatch for
+    'tampered-artifact.safetensors': sidecar records a024ededec2337b8bb6485642c7d740fe42d99d0013b06844d3f81ab66134059,
+    file has f041083ed67f502b73ecfbe906f82b7cf22e37c5003480d51c53b52750ed1021"
+  - "tampered artifact (format tag edited) refused -> artifact format 'not-a-dimer-artifact/9' !=
+    'dimer-yolox-detection-adapter/2'"
+
+**Section 14 activity (`FREEZE_BACKBONE = False`).**
+- The fine-tune grid ran: Section 8 printed `grid ON on Tesla T4: training ['C0', 'C1', 'C2']` and
+  `freeze_backbone: false`, 98,997,304 of 98,997,304 parameters trained. C0 / C1 / C2 validation AP 0.5213 / 0.7384 /
+  0.1137 (AP50 0.8864 / 1.0 / 0.3643), final `total_loss` 3.08909 / 2.27992 / 4.29648, fine-tune seconds 64.0 /
+  101.8 / 86.7; grid hash `4fe23d36b7cc…`. C1 selected (+0.2171 over C0; keep-baseline 0.7006).
+- Unfreezing the backbone gave a lower validation AP than the default head-only fine-tune (C1 0.7384 against
+  0.9237) and a lower exposed development test AP (0.7727 against 0.9535; AP50 1.0 both).
+- Section 9 printed `test_look` "not scored (exploratory)" and "fresh test not scored: settings differ from the
+  pre-registration: ['freeze_backbone']"; it wrote `_exploratory_1` files and no fresh-test per-image file.
+- Section 11 wrote `outputs/yolox-x-detection-adapter.safetensors` (396,493,056 bytes, SHA-256
+  `049468fc01fa6862ff5d943c13266d310fdcd387afa915e4e645e973f4224276`) and `outputs/yolox-x-detection-adapter.json`
+  (SHA-256 `95dec62f4807…`); no `.pt` in the output listing. Reload `{'reloaded_val_ap': 0.7384,
+  'reloaded_val_ap50': 1.0}`, "fresh reload reproduces the selected system validation scores exactly". The flipped
+  weight byte was refused with a digest mismatch (sidecar `049468fc…`, file `30a0bba76bb9…`) and the edited format
+  tag with "artifact format 'not-a-dimer-artifact/9' != 'dimer-yolox-detection-adapter/2'".
+
+Not exercised by either run: both BYOD branches (REL12) and a browser Run all. Status stays **Candidate**.
