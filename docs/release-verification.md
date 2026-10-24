@@ -867,3 +867,14 @@ local run directory had it replaced with `<local-run-dir>/` (byte-wise, no re-se
 - Status: **Candidate**, pending only REL12 (the BYOD journey in a browser) and REL2.
 - REL14: runs of earlier blobs, including the 2026-10-23 runs of blob `d4c103ed`, are history and are not evidence
   for this blob.
+
+## Deterministic safetensors header (2026-10-24)
+
+`safetensors==0.8.0` writes the `__metadata__` keys in hash-map order, which changes between processes
+(eight processes saving the same four keys produced seven different orders), so two exports of the same
+weights could differ in bytes and in `weights_sha256`. `save_artifact` now serializes with
+`safetensors.torch.save` and re-emits the header as compact JSON with sorted keys, padded to an 8-byte
+boundary; the tensor data block is unchanged. The format tag stays `dimer-yolox-detection-adapter/2`: the
+reader is unchanged and earlier `/2` files still load. Covered by unit tests (byte-identical saves in two
+fresh processes, canonical header, no pickle or zip framing). No hosted run has been recorded for this
+change yet.

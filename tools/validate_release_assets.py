@@ -93,7 +93,7 @@ CODE_MARKERS = (
     "new_records = sign_dataset(3, seed=NEW_DATA_SEED)",
     "descriptor = selected_pipe.save_artifact(",  # F7: the selected system is exported
     "artifact_path = OUTPUTS / ARTIFACT_FILE",
-    "save_file(state, str(partial)",
+    "_canonical_safetensors_bytes(state, {",
     "load_file(str(artifact_path)",
     "reloaded = YoloxXDetectionPipeline.load_artifact(artifact_path)",
     "reloaded_metrics = reloaded.evaluate(validation_records)",
