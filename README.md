@@ -53,12 +53,15 @@ than a Hub revision:
 | Revision | `0.1.1rc0` (immutable GitHub release tag) |
 | Asset | `yolox_x.pth`, 793,463,373 bytes |
 | SHA-256 | `5652330b6ae860043f091b8f550a60c10e1129f416edfdb65c259be6caf355cf` |
+| Served file | `yolox_x.safetensors` (396,789,612 bytes, SHA-256 `9644228e0bc68eb24b10e567ec3cdbbd267d549281deb9fc9e0fa0c817a52074`), the safetensors conversion |
 | Licence | Apache-2.0 |
 | Published | 2021-08-18 |
 
 The checkpoint is a **pickle**, so the order matters: `verify_snapshot` re-hashes the file and raises
-on a mismatch *before* `torch.load(..., weights_only=True)` is called, and `from_pretrained` refuses to
-import torch at all until the snapshot verifies. Upstream's own downloader
+on a mismatch *before* `torch.load(..., weights_only=True)` reads it, once, to write the pinned
+safetensors conversion `yolox_x.safetensors`. The model is served only from that file
+(`load_state_dict(strict=True)` after its own digest check), and `from_pretrained` refuses to import torch
+at all until the snapshot or the conversion verifies. Upstream's own downloader
 (`torch.hub.load_state_dict_from_url`, no digest check) is deliberately not vendored. See
 [`docs/WEIGHTS.md`](docs/WEIGHTS.md).
 

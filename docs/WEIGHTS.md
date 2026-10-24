@@ -11,6 +11,7 @@
 | SHA-256 | `5652330b6ae860043f091b8f550a60c10e1129f416edfdb65c259be6caf355cf` |
 | Licence | Apache-2.0 |
 | Published | 2021-08-18 (release `published_at` 2021-08-18T12:41:41Z) |
+| Served file | `yolox_x.safetensors`, 396,789,612 bytes, SHA-256 `9644228e0bc68eb24b10e567ec3cdbbd267d549281deb9fc9e0fa0c817a52074` — written locally from the asset by `convert_checkpoint`, git-ignored, not distributed |
 | Manifest | `weights/yolox-x/dimer-base-manifest.json` |
 | Download | `https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_x.pth` |
 
@@ -30,7 +31,7 @@ that is what makes the download trustworthy — not the URL.
 There is no SafeTensors release. `yolox_x.pth` is a `torch.save` pickle whose top-level keys are
 `amp`, `model`, `optimizer` and `start_epoch`; the `model` value is the 894-entry state dict.
 
-Two protections, in this order:
+Three steps, in this order:
 
 1. `verify_snapshot` re-hashes the file and raises on the first size or digest mismatch. It runs
    **before** the package imports `torch`, so a tampered snapshot never reaches a deserializer.
@@ -38,6 +39,13 @@ Two protections, in this order:
    globals. Upstream's loader passes neither; the upstream downloader
    (`torch.hub.load_state_dict_from_url`, which fetches with no digest check at all) is deliberately
    not vendored.
+3. `convert_checkpoint` reads the file that one time, keeps its `model` state dict, checks that it loads
+   `strict=True` into the vendored architecture, and writes `yolox_x.safetensors` with `safetensors.torch.save_file`
+   (396,789,612 bytes, SHA-256 `9644228e0bc68eb24b10e567ec3cdbbd267d549281deb9fc9e0fa0c817a52074`, pinned in code as `CONVERTED_SHA256`; converting twice gives
+   identical bytes). `from_pretrained` serves only that file: it re-hashes it against the pin before
+   importing `torch`, reads it with `safetensors.torch.load_file` and applies it with
+   `load_state_dict(strict=True)`. Once the conversion exists the pickle is never read again; on CPU the
+   converted tensors equal the source's exactly and the detections on the tutorial scene are identical.
 
 Exported adapters are **not** pickles. `save_artifact` writes the adapted state dict as
 `yolox-x-detection-adapter.safetensors` (tensors only, via `safetensors.torch.save_file`) and its metadata as a
