@@ -913,7 +913,7 @@ TEMPLATE = {
     "closing": (
         "## Interpretation and limits\n\n"
         "**What this notebook established, in this runtime.** The pinned `yolox_x.pth` release asset was downloaded, digest-verified against a "
-        "committed SHA-256 before anything unpickled it, and loaded into YOLOX-X built from vendored upstream code. The pretrained detector "
+        "committed SHA-256 before anything unpickled it, read once to write a safetensors conversion whose SHA-256 the carried code pins, and served from that conversion into YOLOX-X built from vendored upstream code. The pretrained detector "
         "found four of the five drawn COCO objects with per-object IoU 0.918–0.975 in the recorded runs and missed the fifth entirely. A three-class vocabulary "
         "that does not exist in COCO was adapted onto it by a bounded SimOTA fine-tune of the head alone, scored against a held-out split with "
         "COCO-style average precision before and after, run on images from an unseen seed, exported as a single artifact and reloaded from that "
