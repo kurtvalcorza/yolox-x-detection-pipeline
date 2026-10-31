@@ -1,6 +1,8 @@
 # Release verification
 
-**Current status (2026-10-25): Candidate.** **Current blob (2026-10-25).** PR #10 (deterministic safetensors header, merged over the serving change) regenerated the notebook as blob `fbc426ed7eaf` (main `1e25d8b`). Its default path and its Section 14 activity (`FREEZE_BACKBONE = False`) are covered by two hosted Colab T4 runs of that exact blob on 2026-10-25, both one pass with no restart and 0 errors ("Hosted T4 runs of the current blob (2026-10-25, commit 1e25d8b)" at the end of this file). The remaining gates are REL12 (the BYOD journey) and REL2 (a browser Run all). Every hosted run of an earlier blob in this file, including the 2026-10-24 runs below, stays as history (REL14). **Safetensors serving (2026-10-24, history).** The model is now served from `yolox_x.safetensors`, a safetensors conversion of the upstream `.pth` whose SHA-256 (`9644228e0bc6…`) is pinned in code, instead of from the pickle itself (code commit `39160b4`). The regenerated notebook `yolox_x_detection_finetune_colab.ipynb` is blob `dac7f4057970` (commit `dda9bed`). Its default path and its Section 14 activity were covered by two hosted Colab T4 runs of that blob on 2026-10-24 ("Safetensors serving: hosted T4 (2026-10-24, commit dda9bed)" below).
+**Current status (2026-10-25): Candidate.** **Previous blob (2026-10-25).** PR #10 (deterministic safetensors header, merged over the serving change) regenerated the notebook as blob `fbc426ed7eaf` (main `1e25d8b`). Its default path and its Section 14 activity (`FREEZE_BACKBONE = False`) are covered by two hosted Colab T4 runs of that exact blob on 2026-10-25, both one pass with no restart and 0 errors ("Hosted T4 runs of the current blob (2026-10-25, commit 1e25d8b)" at the end of this file). The remaining gates are REL12 (the BYOD journey) and REL2 (a browser Run all). Every hosted run of an earlier blob in this file, including the 2026-10-24 runs below, stays as history (REL14). **Safetensors serving (2026-10-24, history).** The model is now served from `yolox_x.safetensors`, a safetensors conversion of the upstream `.pth` whose SHA-256 (`9644228e0bc6…`) is pinned in code, instead of from the pickle itself (code commit `39160b4`). The regenerated notebook `yolox_x_detection_finetune_colab.ipynb` is blob `dac7f4057970` (commit `dda9bed`). Its default path and its Section 14 activity were covered by two hosted Colab T4 runs of that blob on 2026-10-24 ("Safetensors serving: hosted T4 (2026-10-24, commit dda9bed)" below).
+
+The current blob `2bfb2176` (code commit `4ac5d70`) shows a refused BYOD input as exactly one `Refused: <file>: <reason>` line, with no traceback, and stops Run all at that cell (previously the cell printed the refusal and Run all carried on); genuine failures keep their traceback (NOTEBOOK_SPEC DAT19/DAT20). Its default path (2026-10-30; 25 code cells, exit 0, 0 errors) and its scripted DAT20 refusal (2026-10-30; `USE_BYOD_IMAGE=True;BYOD_IMAGE_PATH=/etc/hostname`: exactly one `Refused:` line at cell `yolox_x_detection-54`, no traceback, earlier cells clean, VM released) both passed on a hosted Colab Tesla T4 (Colab CLI `colab exec -f`, not a browser `Run all`), and the hosted runs of earlier blobs, including `fbc426ed`, are history for it (REL14).
 
 This file is the release gate for `tutorials/yolox_x_detection_finetune_colab.ipynb`. Static
 validation (`tools/validate_release_assets.py`), the unit suite and CI are **not** clean-runtime
@@ -957,3 +959,58 @@ so these runs do not test the header's byte-for-byte repeatability across sessio
 - Status: **Candidate**, pending only REL12 (the BYOD journey) and REL2 (a browser Run all).
 - REL14: runs of earlier blobs, including the 2026-10-24 runs of blob `dac7f405`, are history and are not evidence
   for this blob.
+
+### Hosted Colab T4 runs of blob `2bfb2176` (2026-10-30)
+
+These runs executed the PR head `08a9003122b045fb9082a7e9d89dc53c0a4d2925`, notebook `tutorials/yolox_x_detection_finetune_colab.ipynb` blob `2bfb2176e5d5211b7fd83322bad37601ab99dc61`, fetched at the 40-character SHA and Git-blob verified, with the Colab CLI (`colab exec -f`) on a fresh Colab Tesla T4 session (not a browser `Run all`). Each `run_summary.json` records `verdict` `PASS`, `exec_exit_code` 0, `input_unchanged` true and `stop_verified` true (the VM was released), and the SHA-256 of each executed notebook equals the summary's `executed_sha256`.
+
+**Default path (2026-10-30 18:25:16 UTC start).** Default settings, no overrides; session `suite-yolox-08a9003-8e69`; wall 304.0 s (`wall_s`); `code_cells` 25, `executed_cells` 14, 0 errors. Retained evidence: [`docs/execution-evidence/2026-10-30-08a9003/`](execution-evidence/2026-10-30-08a9003/).
+
+Printed by the default run (verbatim lines from the executed outputs):
+
+```text
+{'verified_files': 1, 'revision': '0.1.1rc0'}
+validation AP@[.50:.95]: baseline 0.0378, C1 0.9237 -> selected system: C1
+metric       baseline    adapted     change
+ap             0.0384     0.9535    +0.9152
+ap50           0.0384     1.0000    +0.9616
+  "selected": {
+    "ap": 0.914,
+    "ap50": 1.0,
+  "baseline": {
+    "ap": 0.0365,
+    "ap50": 0.0365,
+  "verdict": "improved",
+  "ap_difference": 0.8775,
+  "ci95": [
+    0.8603,
+    0.8944
+  ]
+reproduction of the pre-registered evaluation of 2026-10-18 (commit 057d2d8): matches the record
+fresh reload reproduces the selected system validation scores exactly
+```
+
+**DAT20 refusal record (2026-10-30, blob `2bfb2176`).** Overrides, set by `--set` on a copy of the blob: `USE_BYOD_IMAGE` `False` → `True` and `BYOD_IMAGE_PATH` `""` → `'/etc/hostname'` (the run copy differs from the blob in exactly those 2 source lines). The suite cut the run copy right after the refusing cell `yolox_x_detection-54`, dropping 1 cells (0 of them code cells), which reproduces `Run all` stopping at the first error; the cut copy is `run_copy.ipynb`, SHA-256 `3c5a910d0405f8d7b6599f484e2223a724a5477dab9726cf5472019ee083d2ba` (Git blob `9e172df3`), equal to the summary's `run_copy_sha256`. The cut copy's earlier code cells completed without an error output; the refusing cell's only error output has `ename` `IsolatedCellRefusal` and no traceback, and its output holds exactly one `Refused:` line:
+
+```text
+Refused: hostname: not an image Pillow can decode (UnidentifiedImageError: cannot identify image file <_io.BytesIO object at 0x7ceb999b9b70>). Fix it and run this cell again; nothing was written for this input, earlier BYOD results were removed, and the outputs of the earlier sections are kept.
+```
+
+This run says nothing about the 1 cut cells, which did not run in it. Session `suite-yolox-08a9003-8e69`, wall 318.2 s. Retained evidence: [`docs/execution-evidence/2026-10-30-08a9003-refusal/`](execution-evidence/2026-10-30-08a9003-refusal/).
+
+**Local-path redaction.** Local paths were replaced byte-wise by `<local-run-dir>` (and the Colab CLI install path by `<colab-cli-tool-dir>/`) before the first commit; each executed notebook and run copy was checked against its `run_summary.json` before any edit.
+
+| File (under `docs/execution-evidence/2026-10-30-08a9003/`) | Captured SHA-256 | Committed SHA-256 |
+|---|---|---|
+| `yolox_x_detection_finetune_colab_08a9003_colab-cli-t4_default.ipynb` | `fbb742b7fb87f466b499f41e4f44a3fc0bdfa80d98cbba2d9c5da5aba965ee45` | `fbb742b7fb87f466b499f41e4f44a3fc0bdfa80d98cbba2d9c5da5aba965ee45` (unchanged, no local path) |
+| `exec.log` | `142e7d9b0e9848ec63991b8944974bdbad24778d107fa776f21fe554e92447db` | `62214e0bb031ca12decb0b4b4f32bff6ca6fc96565579c0796a905525e89b4e7` (2 local-path replacements) |
+| `run_summary.json` | `fcc84637899b84e27257401ee701ac7b1f096f828f0e6aa77ec408e85e2697a7` | `fcc84637899b84e27257401ee701ac7b1f096f828f0e6aa77ec408e85e2697a7` (unchanged, no local path) |
+
+| File (under `docs/execution-evidence/2026-10-30-08a9003-refusal/`) | Captured SHA-256 | Committed SHA-256 |
+|---|---|---|
+| `yolox_x_detection_finetune_colab_08a9003_colab-cli-t4_refusal.ipynb` | `cb7d1168be87d7dbb8c5db78f36fdca3338f957462c86d08e47bca8ce2e0080d` | `cb7d1168be87d7dbb8c5db78f36fdca3338f957462c86d08e47bca8ce2e0080d` (unchanged, no local path) |
+| `exec.log` | `ddabb69306db6905f254d7ecb083615656e2017548e1fc6d74483cb2124ab667` | `4e35ac1f56a3b53b20fdcdf79d060b678b3da1556cc3f98393356c7a87e924f2` (2 local-path replacements) |
+| `run_summary.json` | `43351ef75a75df998c96c0fb9890caab062b32af19054bf9105f73c808f1b881` | `43351ef75a75df998c96c0fb9890caab062b32af19054bf9105f73c808f1b881` (unchanged, no local path) |
+| `run_copy.ipynb` | `3c5a910d0405f8d7b6599f484e2223a724a5477dab9726cf5472019ee083d2ba` | `3c5a910d0405f8d7b6599f484e2223a724a5477dab9726cf5472019ee083d2ba` (unchanged, no local path) |
+
+Not exercised by these runs: an accepted BYOD input (REL12), a browser `Run all` of the interactive journeys (REL2), and every other open gate named in this file; these runs close none of them.
